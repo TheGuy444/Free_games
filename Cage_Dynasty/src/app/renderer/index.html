@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'" />
+  <title>Cage Dynasty (working title)</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; --bg: #14161a; --panel: #1d2026; --line: #2c3038; --muted: #9aa0aa; --accent: #c8402f; --gold: #ffb347; --good: #4caf72; --bad: #d9534f; }
+    body { margin: 0; background: var(--bg); color: #e6e6e6; }
+    header { display: flex; gap: 14px; align-items: center; padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+    header h1 { font-size: 18px; margin: 0; }
+    #clock { margin-right: auto; color: var(--muted); }
+    nav { display: flex; gap: 4px; padding: 0 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+    nav button { background: none; border-radius: 0; border-bottom: 2px solid transparent; color: var(--muted); }
+    nav button.on { color: #fff; border-bottom-color: var(--accent); }
+    button { background: var(--accent); color: white; border: 0; border-radius: 6px; padding: 7px 12px; cursor: pointer; font: inherit; }
+    button.ghost { background: #2c3038; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    input, select { background: #0f1114; color: #e6e6e6; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; }
+    main { padding: 16px 20px; }
+    .tab { display: none; } .tab.on { display: block; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    section { background: var(--panel); border-radius: 8px; padding: 12px 16px; overflow: auto; }
+    h2 { font-size: 16px; margin: 4px 0 10px; } h3 { font-size: 14px; margin: 12px 0 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    tr.pick-red td { background: #3a1f1f; } tr.pick-blue td { background: #1f2a3a; }
+    .muted { color: var(--muted); } .gold { color: var(--gold); font-weight: 600; } .bad { color: #ff7a6b; } .good { color: #7bd88f; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+    .moment { margin: 2px 0 2px 16px; font-style: italic; }
+    #pbp { font-family: ui-monospace, monospace; font-size: 13px; line-height: 1.6; max-height: 60vh; overflow: auto; }
+    #pbp .big { color: var(--gold); font-weight: 600; } #pbp .round { color: var(--muted); margin-top: 8px; }
+    .pill { display: inline-block; padding: 1px 6px; border-radius: 10px; background: #2c3038; font-size: 12px; }
+    .scroll { max-height: 70vh; overflow: auto; }
+    .paper { margin: 10px 0 18px; }
+    .masthead { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px double var(--line); padding-bottom: 6px; margin-bottom: 14px; }
+    .masthead b { font-family: Georgia, "Times New Roman", serif; font-size: 30px; letter-spacing: 1px; }
+    .paper h2, .paper h3, .paper h4 { font-family: Georgia, "Times New Roman", serif; margin: 2px 0 8px; line-height: 1.2; }
+    .paper h2 { font-size: 30px; } .paper h3 { font-size: 20px; } .paper h4 { font-size: 16px; margin-bottom: 4px; }
+    .paper p { line-height: 1.55; margin: 0 0 10px; }
+    .kicker { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .lead { overflow: hidden; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .lead p { font-size: 17px; }
+    .art { float: right; margin: 0 0 10px 18px; text-align: center; }
+    .art svg { display: block; border-radius: 6px; }
+    .art figcaption { color: var(--muted); font-size: 12px; margin-top: 4px; max-width: 200px; }
+    .seconds { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .seconds article { overflow: hidden; }
+    .seconds article + article { border-left: 1px solid var(--line); padding-left: 22px; }
+    .briefs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 22px; padding: 14px 0; }
+    .briefs article { font-size: 14px; }
+    .briefs p { color: #c8c8c8; margin: 0; }
+    .storylink { background: none; color: var(--muted); padding: 0; font-size: 13px; text-decoration: underline; }
+    .wire-title { margin: 8px 0; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-size: 13px; }
+    .phead { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; } .phead svg { border-radius: 8px; flex: none; }
+    .nick { color: var(--gold); font-style: italic; }
+    .ptabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 8px; }
+    .ptitle { margin: 12px 0 6px; color: var(--muted); text-transform: uppercase; font-size: 12px; letter-spacing: 1px; }
+    .stat { display: grid; grid-template-columns: 150px 1fr 34px; gap: 10px; align-items: center; margin: 5px 0; }
+    .stat b { text-align: right; } .bar { background: #0f1114; border-radius: 4px; height: 10px; overflow: hidden; } .bar div { height: 100%; border-radius: 4px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; } .grid2 .stat { grid-template-columns: 130px 1fr 30px; } .grid2 .hnote { margin-left: 0; }
+    .kv td:first-child { color: var(--muted); width: 90px; }
+    .acc { margin: 4px 0; } .healthwrap { display: flex; gap: 20px; align-items: flex-start; } .hnote { font-size: 13px; margin: -2px 0 8px 160px; }
+    .hofyear { font-family: Georgia, serif; margin: 16px 0 6px; color: var(--gold); }
+    .hofcard { display: flex; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); } .hofcard svg { border-radius: 8px; flex: none; }
+    .segment { margin-top: 10px; color: var(--gold); text-transform: uppercase; font-size: 12px; letter-spacing: 1px; border-bottom: 1px solid var(--gold); }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 24px; }
+    .showsTop { display: grid; grid-template-columns: 1fr 180px; gap: 14px; }
+    .showList { background: #0f1114; border: 1px solid var(--line); border-radius: 6px; min-height: 110px; max-height: 170px; overflow: auto; }
+    .showList div { padding: 5px 10px; cursor: pointer; font-size: 14px; } .showList div.on { background: #2b4a7a; } .showList div:hover:not(.on) { background: #1a1d22; }
+    .showBtns { display: flex; flex-direction: column; gap: 8px; }
+    .showForm { background: #171a1f; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-top: 10px; }
+    .showHead { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 6px; margin: 12px 0 6px; }
+    .showHead > div { padding: 6px 12px; } .showHead > div + div { border-left: 1px solid var(--line); }
+    .showHead .sname { color: #ff8a7a; font-style: italic; font-weight: 600; font-size: 16px; }
+    .bouts td { vertical-align: middle; padding: 5px 6px; } .bouts .vsx { text-align: center; color: var(--muted); font-size: 11px; width: 26px; }
+    .bouts .redn { text-align: right; color: #ff9a8a; font-weight: 600; } .bouts .bluen { color: #8ab8ff; font-weight: 600; }
+    .bouts .ctl button { padding: 3px 8px; margin-left: 2px; } .bouts .belt { color: var(--gold); }
+    .bouts tr.seg td { color: var(--gold); text-transform: uppercase; font-size: 12px; letter-spacing: 1px; border-bottom: 1px solid var(--gold); padding-top: 10px; }
+    .replBox { background: #171a1f; border: 1px solid var(--gold); border-radius: 6px; padding: 8px 12px; margin: 2px 0 8px; }
+    .replTbl tr[data-pick] { cursor: pointer; } .replTbl tr.on td { background: #2b4a7a; color: #fff; } .replTbl tr[data-pick]:hover:not(.on) td { background: #1d2127; }
+    .bouts tr.offrow td { background: #241a1a; }
+    .addTop { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .addTop label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; }
+    .addGrid { display: grid; grid-template-columns: 1fr 130px 1fr 300px; gap: 10px 12px; margin-top: 12px; }
+    .pickList { background: #0f1114; border: 1px solid var(--line); border-radius: 6px; height: 190px; overflow: auto; font-size: 13px; }
+    .pickList div { display: grid; grid-template-columns: 34px 1fr 56px 34px; gap: 6px; padding: 3px 8px; cursor: pointer; }
+    .pickList div.off { color: var(--muted); } .pickList div.on { background: #2b4a7a; color: #fff; } .pickList div:hover:not(.on) { background: #1a1d22; }
+    .sortCol { display: flex; flex-direction: column; gap: 6px; } .sortBtn.on { background: var(--accent); }
+    .matchCol, .matchCol2 { border-left: 1px solid var(--line); padding-left: 12px; font-size: 14px; line-height: 1.45; }
+    .matchCol p, .matchCol2 p { margin: 0 0 10px; }
+    .fpanel { border: 1px solid var(--line); border-radius: 6px; font-size: 13px; min-height: 200px; }
+    .fpanel .fp-top { display: flex; gap: 10px; padding: 8px; border-bottom: 1px solid var(--line); align-items: center; } .fpanel svg { border-radius: 6px; flex: none; }
+    .fpanel .fp-row { padding: 4px 10px; border-bottom: 1px solid var(--line); } .fpanel .fp-row:last-child { border-bottom: 0; }
+    .fpanel .hl { color: #8ab8ff; }
+    .vsCol { display: flex; align-items: center; justify-content: center; } .vsCol div { writing-mode: vertical-rl; font-weight: 800; letter-spacing: 6px; font-size: 22px; background: #0f1114; padding: 14px 8px; border-radius: 6px; }
+    #fn { position: fixed; inset: 0; background: #0b0c0e; z-index: 50; overflow: auto; display: none; }
+    #fn.on { display: block; }
+    #fn .fnWrap { max-width: 1180px; margin: 0 auto; padding: 18px 22px 40px; }
+    #fn .fnHead { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    #fn .fnHead h2 { font-size: 26px; margin: 0; font-style: italic; color: #ff8a7a; }
+    #fn .fnHead .muted { margin-right: auto; }
+    .fnCard td { vertical-align: middle; padding: 6px; } .fnSum td { vertical-align: top !important; padding: 8px 6px; } .fnCard td.chk { width: 28px; } .fnCard input[type=checkbox] { width: 18px; height: 18px; }
+    .fnCard .redn { text-align: right; color: #ff9a8a; font-weight: 600; } .fnCard .bluen { color: #8ab8ff; font-weight: 600; }
+    .fnCard tr.seg td { color: var(--gold); text-transform: uppercase; font-size: 12px; letter-spacing: 1px; border-bottom: 1px solid var(--gold); padding-top: 12px; }
+    .fnCard tr.skip td:not(.chk) { opacity: 0.45; }
+    .fnStage { display: grid; grid-template-columns: 1fr 330px; gap: 16px; }
+    .fnLive { background: var(--panel); border-radius: 8px; padding: 14px 18px; min-height: 420px; }
+    .fnTale { display: grid; grid-template-columns: 1fr 70px 1fr; align-items: center; text-align: center; margin-bottom: 10px; }
+    .fnTale .nm { font-size: 22px; font-weight: 700; } .fnTale .r { color: #ff9a8a; } .fnTale .b { color: #8ab8ff; } .fnTale .vs { font-weight: 800; color: var(--muted); }
+    .fnSlot { text-align: center; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; font-size: 12px; }
+    #fnPbp { font-family: ui-monospace, monospace; font-size: 13px; line-height: 1.6; max-height: 46vh; overflow: auto; background: #0f1114; border-radius: 6px; padding: 8px 12px; }
+    #fnPbp .big { color: var(--gold); font-weight: 600; } #fnPbp .round { color: var(--muted); margin-top: 8px; }
+    .fnResult { border: 1px solid var(--gold); border-radius: 8px; padding: 10px 14px; margin: 12px 0; text-align: center; font-size: 18px; }
+    .fnResult .big { color: var(--gold); font-weight: 700; font-size: 22px; }
+    .mic { background: #171a1f; border-left: 3px solid var(--accent); border-radius: 4px; padding: 8px 12px; margin: 8px 0; }
+    .mic .who { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .mic .q { font-size: 16px; font-style: italic; margin-top: 3px; }
+    .mic.hot { border-left-color: var(--gold); } .mic.hot .q { font-size: 18px; }
+    .fnLog { background: var(--panel); border-radius: 8px; padding: 10px 14px; max-height: 78vh; overflow: auto; }
+    .fnLog .it { border-bottom: 1px solid var(--line); padding: 6px 0; font-size: 13px; }
+    .fnLog .it .seg { color: var(--gold); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+    .fnSkipped { background: #171a1f; border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; margin-bottom: 10px; }
+    .flairBar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #4a6fa5, #5a6270 50%, #c8402f); margin: 6px 0 2px; }
+    .flairBar i { position: absolute; top: -4px; width: 6px; height: 18px; margin-left: -3px; background: #fff; border-radius: 3px; box-shadow: 0 0 0 2px #14161a; }
+    .flairEnds { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="promo">Cage Dynasty</h1>
+    <span id="clock"></span>
+    <button id="adv1" class="ghost">Advance 1 week</button>
+    <button id="advNext">Go to next event</button>
+  </header>
+  <nav>
+    <button data-tab="home" class="on">Office</button>
+    <button data-tab="book">Booking</button>
+    <button data-tab="ranks">Rankings</button>
+    <button data-tab="news">News</button><button data-tab="hof">Hall of Fame</button><button data-tab="biz">Business</button>
+    <button data-tab="view">Fight viewer</button>
+    <button data-tab="world">World</button>
+  </nav>
+  <main>
+    <div class="tab on" id="tab-home">
+      <div class="grid">
+        <section><h2>Upcoming events</h2><div id="upcoming"></div>
+          <div class="row"><input id="newWeeks" type="number" min="1" max="52" value="8" style="width:60px"> weeks out
+            <input id="newName" placeholder="Event name (optional)"></div>
+          <div class="row"><select id="newRegion"></select><select id="newBroadcast"><option value="tv">TV card</option><option value="ppv">PPV card</option><option value="none">No broadcast</option></select>
+            <select id="newVenue"><option value="">Venue: auto</option></select><button id="newEvent">Schedule event</button></div>
+          <div id="schedMsg" class="muted"></div></section>
+        <section><h2>News</h2><div id="news" class="scroll"></div></section>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-book">
+      <div id="deskShows">
+        <section>
+          <div class="showsTop">
+            <div><div class="ptitle" style="margin-top:0">Upcoming shows</div><div id="showList" class="showList"></div></div>
+            <div class="showBtns">
+              <button id="addShowBtn">Add show</button>
+              <button id="alterShowBtn" class="ghost">Alter show</button>
+              <button id="cancelShowBtn" class="ghost">Cancel show</button>
+              <select id="pastSel"><option value="">Past results…</option></select>
+            </div>
+          </div>
+          <div id="showForm" class="showForm" hidden>
+            <div class="row"><b id="showFormTitle">New show</b></div>
+            <div class="row"><input id="sfName" placeholder="Show name (optional)" style="min-width:240px">
+              <input id="sfWeeks" type="number" min="1" max="52" value="8" style="width:60px"> weeks out
+              <select id="sfRegion"></select>
+              <select id="sfBroadcast"><option value="tv">TV card</option><option value="ppv">PPV card</option><option value="none">No broadcast</option></select>
+              <select id="sfVenue"><option value="">Venue: auto</option></select>
+              <button id="sfSave">Save</button><button id="sfClose" class="ghost">Close</button></div>
+          </div>
+          <div id="showHead"></div>
+          <div class="row"><button id="addBoutBtn">Add bout</button><button id="autofill" class="ghost">Auto-fill card</button>
+            <label><input type="checkbox" id="showPrelims" checked> Show prelims</label><span id="deskMsg" class="muted"></span></div>
+          <table id="boutTbl" class="bouts"></table>
+        </section>
+        <section id="resultsSec" style="margin-top:14px" hidden><h2 id="resultsTitle">Results</h2><div id="cardView"></div></section>
+      </div>
+
+      <div id="deskAdd" hidden>
+        <section>
+          <div class="addTop">
+            <label>Event<select id="abEvent"></select></label>
+            <label>Card position<select id="abPos"></select></label>
+            <label>Weight class<select id="abDiv"></select></label>
+            <label>Title belt<select id="abTitle"></select></label>
+            <label>Rounds<select id="abRounds"><option value="3">3 rounds</option><option value="5">5 rounds</option></select></label>
+            <span style="margin-left:auto"></span><button id="abConfirm" hidden disabled>Confirm replacement</button>
+            <button id="abBack" class="ghost">Back to shows</button>
+          </div>
+          <div id="replBanner" class="replBox" style="margin-top:10px" hidden></div>
+          <div class="addGrid">
+            <div class="pickCol">
+              <div id="pickA" class="pickList"></div>
+              <div class="row"><input id="searchA" placeholder="Search"></div>
+            </div>
+            <div class="sortCol">
+              <button class="ghost sortBtn" data-sort="ranking">By ranking</button>
+              <button class="ghost sortBtn" data-sort="name">By name</button>
+              <button class="ghost sortBtn" data-sort="popularity">By popularity</button>
+              <button class="ghost sortBtn" data-sort="rating">By rating</button>
+            </div>
+            <div class="pickCol">
+              <div id="pickB" class="pickList"></div>
+              <div class="row"><input id="searchB" placeholder="Search"><label class="muted"><input type="checkbox" id="nearbyB"> Other divisions (superfight)</label></div>
+            </div>
+            <div class="matchCol" id="matchCol"><p class="muted">Pick a fighter on each side.</p></div>
+            <div id="panelA" class="fpanel"></div>
+            <div class="vsCol"><div>VS</div></div>
+            <div id="panelB" class="fpanel"></div>
+            <div class="matchCol2" id="matchCol2"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-ranks">
+      <div class="grid">
+        <section>
+          <div class="row"><select id="rkScope"></select><select id="rkList"></select></div>
+          <div class="scroll"><table id="rkTbl"></table></div>
+        </section>
+        <section id="profile"><p class="muted">Click a fighter to see their profile and every ranking they hold.</p></section>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-news">
+      <section>
+        <div class="row">
+          <button class="ghost" data-news="mine">My promotion</button><button class="ghost" data-news="world">Around the world</button><button class="ghost" data-news="all">Everything</button>
+        </div>
+        <div id="front" class="paper"></div>
+        <h3 class="wire-title">Running news</h3>
+        <div class="row">
+          <select id="newsKind"><option value="all">All news</option><option value="results">Results</option><option value="title">Titles</option>
+            <option value="signing">Signings</option><option value="injury">Injuries</option><option value="retirement">Retirements</option>
+            <option value="callout">Callouts</option><option value="weigh_in">Weigh-ins</option></select>
+          <label><input type="checkbox" id="newsBig"> Headlines only</label>
+        </div>
+        <div id="newsList"></div>
+      </section>
+    </div>
+
+    <div class="tab" id="tab-biz">
+      <div class="grid">
+        <section><h2>Finances</h2><div id="bizCash"></div>
+          <h3>Broadcasting</h3><div id="bizOutlets"></div><div id="bizOffers"></div><div id="bizOwn"></div><div id="bizMsg" class="bad"></div></section>
+        <section><h2>Reality series</h2><div id="bizReality"></div></section>
+      </div>
+      <section style="margin-top:12px"><h2>Recent events</h2><div id="bizEvents"></div></section>
+      <section style="margin-top:12px"><h2>Records</h2><div class="row"><button class="ghost" data-rec="world">Worldwide</button><button class="ghost" data-rec="mine">My promotion</button></div><div id="bizRecords"></div></section>
+    </div>
+
+    <div class="tab" id="tab-hof">
+      <section>
+        <div class="row"><select id="hofScope"></select><span class="muted" id="hofCount"></span></div>
+        <div id="hofList" class="hof"></div>
+      </section>
+    </div>
+
+    <div class="tab" id="tab-view">
+      <div class="grid">
+        <section><h2>Fights with play-by-play</h2><div class="scroll"><table id="bouts"></table></div></section>
+        <section><h2 id="pbp-title">Pick a fight</h2>
+          <div class="row"><button id="live">Watch live</button><button id="instant" class="ghost">Show all</button></div>
+          <div id="pbp"></div></section>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-world">
+      <section><h2>Promotions</h2>
+        <p class="muted">Each promotion runs its own calendar. Size sets how often it can run a card, its model sets how cards are broadcast, and its goal shapes how it spends.</p>
+        <div class="row"><select id="promoTier"><option value="">All sizes</option><option value="global">Global</option><option value="major">Major</option><option value="regional">Regional</option><option value="local">Local</option></select></div>
+        <div class="scroll"><table id="promos"></table></div></section>
+      <section style="margin-top:14px"><h2>Top fighters in the world</h2><div class="scroll"><table id="fighters"></table></div></section>
+    </div>
+  </main>
+  <div id="fn"><div class="fnWrap"><div class="fnHead"><span class="kicker">Fight night</span><h2 id="fnTitle"></h2><span class="muted" id="fnSub"></span></div><div id="fnBody"></div></div></div>
+  <script>
+    // One call path for Electron (IPC) and browser mode (HTTP).
+    const call = (name, ...args) => window.gameApi
+      ? window.gameApi.call(name, ...args)
+      : fetch(`/api/${name}`, { method: "POST", body: JSON.stringify(args) }).then((r) => r.json());
+    const el = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const METHOD = { KO: "KO", TKO: "TKO", SUB: "submission", DEC_U: "unanimous decision", DEC_S: "split decision", DEC_M: "majority decision", DRAW: "draw" };
+    let state = null, eventId = null, divId = null, red = null, blue = null, rosterRows = [];
+
+    document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => {
+      document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("on", x === b));
+      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.id === `tab-${b.dataset.tab}`));
+      if (b.dataset.tab === "view") refreshBouts();
+      if (b.dataset.tab === "world") refreshWorld();
+      if (b.dataset.tab === "ranks") refreshRankings();
+      if (b.dataset.tab === "news") refreshNews();
+      if (b.dataset.tab === "hof") refreshHof();
+      if (b.dataset.tab === "biz") refreshBiz();
+    }));
+
+    async function refreshHeader() {
+      state = await call("state");
+      el("promo").textContent = state.promotion;
+      el("clock").textContent = `${state.year}, week ${state.weekOfYear + 1} · ${state.roster} fighters · ${state.tier} promotion`;
+      el("advNext").disabled = state.events.length === 0 && !state.fightNight;
+      el("advNext").textContent = state.fightNight ? "Fight night!" : "Go to next event";
+      el("adv1").disabled = !!state.fightNight;
+      if (state.fightNight && fn.shownFor !== state.fightNight) openFightNight();
+      el("upcoming").innerHTML = state.events.length
+        ? `<table><tr><th>Event</th><th>When</th><th></th></tr>${state.events.map((e) => `<tr><td>${esc(e.name)}</td><td>${e.weeksAway} weeks</td><td><button class="ghost" data-ev="${e.id}">Book card</button></td></tr>`).join("")}</table>`
+        : `<p class="muted">Nothing scheduled. Schedule an event to start booking.</p>`;
+      el("upcoming").querySelectorAll("button[data-ev]").forEach((b) => (b.onclick = () => { eventId = Number(b.dataset.ev); document.querySelector('nav button[data-tab="book"]').click(); refreshBooking(); }));
+      const news = await call("news", 40);
+      el("news").innerHTML = news.map((n) => `<div class="row"><span class="pill">wk ${n.week % 52 + 1}</span>${esc(n.text)}</div>`).join("") || `<p class="muted">No news yet.</p>`;
+    }
+
+    // ------------------------------------------------------------ Booking desk: shows
+    let shows = [], formMode = null;
+    async function refreshBooking() {
+      shows = await call("shows");
+      if (eventId !== null && !shows.some((s) => s.id === eventId)) {
+        // A finished show: open its results.
+        const past = await call("pastShows");
+        if (past.some((s) => s.id === eventId)) { await openResults(eventId); }
+        eventId = null;
+      }
+      if (eventId === null && shows.length) eventId = shows[0].id;
+      el("showList").innerHTML = shows.map((s) => `<div data-show="${s.id}" class="${s.id === eventId ? "on" : ""}">${esc(s.name)} <span class="muted">· ${esc(s.date)} · ${s.bouts} bout${s.bouts === 1 ? "" : "s"}</span></div>`).join("")
+        || `<div class="muted">No shows scheduled. Press Add show.</div>`;
+      el("showList").querySelectorAll("[data-show]").forEach((d) => (d.onclick = () => { eventId = Number(d.dataset.show); refreshBooking(); }));
+      const past = await call("pastShows");
+      el("pastSel").innerHTML = `<option value="">Past results…</option>` + past.map((s) => `<option value="${s.id}">${esc(s.name)} (${esc(s.date)})</option>`).join("");
+      for (const id of ["alterShowBtn", "cancelShowBtn", "addBoutBtn", "autofill"]) el(id).disabled = eventId === null;
+      await refreshShow();
+    }
+
+    async function refreshShow() {
+      if (eventId === null) { el("showHead").innerHTML = ""; el("boutTbl").innerHTML = ""; return; }
+      const s = await call("showDetails", eventId);
+      el("showHead").className = "showHead";
+      el("showHead").innerHTML = `<div><div class="sname">${esc(s.name)}</div><div>${esc(s.date)} <span class="muted">(${s.weeksAway} week${s.weeksAway === 1 ? "" : "s"} away)</span></div><div>${esc(s.region ?? "")}${s.venue ? ` · ${esc(s.venue.replace("_", " "))}` : " · venue picked by demand"}</div></div>
+        <div><div><i>${esc(s.broadcastLine)}</i></div><div class="muted">${s.bouts} bout${s.bouts === 1 ? "" : "s"} booked · card draw ${s.draw}</div></div>`;
+      const rows = await call("card", eventId);
+      const showPre = el("showPrelims").checked;
+      let slot = 0;
+      const body = rows.map((b) => {
+        if (b.status === "booked") {
+          slot++;
+          if (!showPre && slot > s.mainCardSize) return "";
+          const seg = slot === 1 ? `<tr class="seg"><td colspan="6">Main card</td></tr>` : slot === s.mainCardSize + 1 ? `<tr class="seg"><td colspan="6">Prelims</td></tr>` : "";
+          return `${seg}<tr><td class="redn"><a href="#" data-prof="${b.redId}" style="color:inherit">${esc(b.red)}</a></td><td class="vsx">VS</td><td class="bluen"><a href="#" data-prof="${b.blueId}" style="color:inherit">${esc(b.blue)}</a></td>
+            <td>${esc(b.division)} <span class="muted">· ${b.rounds} rds</span>${b.title ? ' <span class="belt" title="Title fight">🏆</span>' : ""}</td>
+            <td><button class="ghost" data-info="${b.id}" data-r="${b.redId}" data-b="${b.blueId}" data-t="${b.title ? 1 : 0}" title="Matchup info">i</button></td>
+            <td class="ctl" style="text-align:right"><button class="ghost" data-up="${b.id}" title="Move up">▲</button><button class="ghost" data-down="${b.id}" title="Move down">▼</button><button class="ghost" data-swap="${b.id}" title="Swap corners">⇄</button><button class="ghost" data-cancel="${b.id}" title="Remove bout" style="color:#ff7a6b">✕</button></td></tr>`;
+        }
+        if (b.status === "cancelled" && b.reason !== "cancelled by the promotion" && !(b.reason || "").includes("; replaced by") && b.reason !== "show cancelled") {
+          return `<tr class="offrow"><td class="redn muted">${esc(b.red)}</td><td class="vsx">VS</td><td class="muted">${esc(b.blue)}</td><td colspan="2" class="bad">Off: ${esc(b.reason)}</td>
+            <td style="text-align:right"><button data-repl="${b.id}">Find replacement</button> <button class="ghost" data-drop="${b.id}" title="Leave it off the card">Drop</button></td></tr>`;
+        }
+        return "";
+      }).join("");
+      el("boutTbl").innerHTML = body || `<tr><td class="muted">No bouts yet. Press Add bout, or Auto-fill card.</td></tr>`;
+      const T = el("boutTbl");
+      T.querySelectorAll("[data-cancel]").forEach((x) => (x.onclick = async () => { await call("cancel", Number(x.dataset.cancel)); refreshBooking(); }));
+      T.querySelectorAll("[data-swap]").forEach((x) => (x.onclick = async () => { await call("swapCorners", Number(x.dataset.swap)); refreshShow(); }));
+      for (const [attr, dir] of [["up", -1], ["down", 1]]) T.querySelectorAll(`[data-${attr}]`).forEach((x) => (x.onclick = async () => {
+        const r = await call("moveBout", Number(x.dataset[attr]), dir);
+        if (!r.ok) deskMsg(r.error, true); else refreshShow();
+      }));
+      T.querySelectorAll("[data-info]").forEach((x) => (x.onclick = () => openAdd({ a: Number(x.dataset.r), b: Number(x.dataset.b), title: x.dataset.t === "1", viewOnly: Number(x.dataset.info) })));
+      T.querySelectorAll("[data-repl]").forEach((x) => (x.onclick = () => openAdd({ replacing: Number(x.dataset.repl) })));
+      T.querySelectorAll("[data-drop]").forEach((x) => (x.onclick = async () => { await call("dropOff", Number(x.dataset.drop)); refreshShow(); }));
+      T.querySelectorAll("[data-prof]").forEach((x) => (x.onclick = (ev) => { ev.preventDefault(); document.querySelector('nav button[data-tab="ranks"]').click(); showProfile(Number(x.dataset.prof)); }));
+    }
+    function deskMsg(text, bad) { el("deskMsg").innerHTML = text ? `<span class="${bad ? "bad" : "good"}">${esc(text)}</span>` : ""; }
+    el("showPrelims").onchange = refreshShow;
+    el("autofill").onclick = async () => { const n = await call("autofill", eventId); deskMsg(`Auto-fill booked ${n} bout${n === 1 ? "" : "s"}.`); refreshBooking(); };
+    el("pastSel").onchange = async () => { if (el("pastSel").value) await openResults(Number(el("pastSel").value)); };
+    async function openResults(id) {
+      const past = await call("pastShows");
+      const ev = past.find((s) => s.id === id) || { id, name: "Results" };
+      el("resultsSec").hidden = false;
+      el("resultsTitle").textContent = `Results: ${ev.name}`;
+      await refreshCard({ id, status: "completed" });
+      el("resultsSec").scrollIntoView({ block: "start" });
+    }
+
+    // Add / alter / cancel show
+    function openShowForm(mode, s) {
+      formMode = mode;
+      el("showForm").hidden = false;
+      el("showFormTitle").textContent = mode === "add" ? "New show" : `Alter ${s.name}`;
+      el("sfName").value = mode === "alter" ? s.name : "";
+      el("sfWeeks").value = mode === "alter" ? s.weeksAway : 8;
+      if (mode === "alter") { el("sfRegion").value = s.regionId ?? ""; el("sfBroadcast").value = s.broadcast || "none"; el("sfVenue").value = s.venue || ""; }
+    }
+    el("addShowBtn").onclick = () => openShowForm("add");
+    el("alterShowBtn").onclick = async () => openShowForm("alter", await call("showDetails", eventId));
+    el("sfClose").onclick = () => { el("showForm").hidden = true; };
+    el("sfSave").onclick = async () => {
+      if (formMode === "add") {
+        eventId = await call("createEvent", Number(el("sfWeeks").value), el("sfName").value, Number(el("sfRegion").value), el("sfBroadcast").value, el("sfVenue").value);
+        deskMsg("Show scheduled.");
+      } else {
+        const r = await call("alterShow", eventId, { name: el("sfName").value, weeksAhead: Number(el("sfWeeks").value), regionId: Number(el("sfRegion").value), broadcast: el("sfBroadcast").value, venue: el("sfVenue").value });
+        if (!r.ok) { deskMsg(r.error, true); return; }
+        deskMsg("Show updated.");
+      }
+      el("showForm").hidden = true;
+      refreshAll();
+    };
+    el("cancelShowBtn").onclick = async () => {
+      if (el("cancelShowBtn").dataset.confirm !== String(eventId)) { el("cancelShowBtn").dataset.confirm = String(eventId); el("cancelShowBtn").textContent = "Press again to cancel"; return; }
+      el("cancelShowBtn").dataset.confirm = ""; el("cancelShowBtn").textContent = "Cancel show";
+      const r = await call("cancelShow", eventId);
+      if (!r.ok) deskMsg(r.error, true); else { deskMsg("Show cancelled; its bouts are off."); eventId = null; refreshAll(); }
+    };
+
+    // ------------------------------------------------------------ Booking desk: Add bout
+    const add = { sort: "ranking", a: null, b: null, viewOnly: null };
+    let divisionsCache = [];
+    async function openAdd(opts = {}) {
+      el("deskShows").hidden = true; el("deskAdd").hidden = false;
+      add.a = opts.a ?? null; add.b = opts.b ?? null; add.viewOnly = opts.viewOnly ?? null; add.replacing = opts.replacing ?? null; add.repl = null;
+      if (add.replacing) {
+        const r = await call("replacementInfo", add.replacing);
+        if (!r.ok) { closeAdd(); deskMsg(r.error, true); return; }
+        add.repl = r.value; add.b = r.value.kept.id; add.a = null; eventId = r.value.eventId;
+      }
+      const R = add.repl;
+      for (const id of ["abPos", "abEvent", "abDiv", "abTitle", "abRounds", "nearbyB", "searchB"]) el(id).disabled = !!R;
+      el("abBack").textContent = R ? "Cancel" : "Back to shows";
+      el("abConfirm").hidden = !R; el("abConfirm").disabled = true;
+      el("replBanner").hidden = !R;
+      if (R) el("replBanner").innerHTML = `<b>Replacing ${esc(R.out.name)}</b> <span class="muted">(${esc(R.out.reason || "out")}). ${esc(R.kept.name)} stays in on the right. Pick his new opponent on the left, then Confirm. Same slot (${R.slot}), ${R.title ? "title fight, " : ""}${R.rounds} rounds, ${R.weeksOut} week${R.weeksOut === 1 ? "" : "s"}' notice.</span>`;
+      el("abEvent").innerHTML = shows.map((s) => `<option value="${s.id}" ${s.id === eventId ? "selected" : ""}>${esc(s.name)} · ${esc(s.date)}</option>`).join("");
+      const pos = await call("cardPositions");
+      el("abPos").innerHTML = pos.map((p) => `<option value="${p.key}" ${p.key === "main_card" ? "selected" : ""}>${esc(p.label)}</option>`).join("");
+      divisionsCache = await call("divisions");
+      let div = divisionsCache[0]?.id;
+      if (R) div = R.kept.weightClassId;
+      else if (add.a) { const pf = await call("fighterPanel", add.a, eventId); const d = divisionsCache.find((x) => x.name === pf.division); if (d) div = d.id; }
+      el("abDiv").innerHTML = divisionsCache.map((d) => `<option value="${d.id}" ${d.id === div ? "selected" : ""}>${esc(d.name)} (${d.count})</option>`).join("");
+      el("searchA").value = ""; el("searchB").value = ""; el("nearbyB").checked = false;
+      await refreshTitleSel(R ? R.title : opts.title);
+      if (R) { el("abRounds").value = String(R.rounds); const slotKey = R.slot === 1 ? "main" : R.slot === 2 ? "co" : R.slot <= 5 ? "main_card" : "prelims"; el("abPos").value = slotKey; }
+      await refreshPickers();
+    }
+    async function refreshTitleSel(want) {
+      const t = await call("titleFor", Number(el("abDiv").value));
+      el("abTitle").innerHTML = `<option value="0">None</option><option value="1" ${want ? "selected" : ""}>${esc(t.label)}${t.champion ? ` (champion: ${esc(t.champion)})` : " (vacant)"}</option>`;
+    }
+    function pickRows(rows, side) {
+      const sel = side === "a" ? add.a : add.b;
+      return rows.map((f) => `<div data-f="${f.id}" class="${f.id === sel ? "on" : f.ok ? "" : "off"}" title="${esc(f.status)}"><span>${f.rank === "C" ? '<span class="gold">C</span>' : esc(f.rank)}</span><span>${esc(f.name)}${f.division ? ` <span class="muted">(${esc(f.division)})</span>` : ""}${f.ok ? "" : ` <span class="muted">· ${esc(f.status)}</span>`}</span><span class="muted">${esc(f.record)}</span><span class="muted">${f.pop}</span></div>`).join("")
+        || `<div class="off"><span></span><span>No one matches.</span></div>`;
+    }
+    async function refreshPickers() {
+      const ev = Number(el("abEvent").value), wc = Number(el("abDiv").value);
+      document.querySelectorAll(".sortBtn").forEach((b) => b.classList.toggle("on", b.dataset.sort === add.sort));
+      const [ra, rb] = await Promise.all([call("picker", ev, wc, add.sort, el("searchA").value, false), call("picker", ev, wc, add.sort, el("searchB").value, el("nearbyB").checked)]);
+      const R = add.repl;
+      const left = R ? ra.filter((f) => f.ok && f.id !== R.kept.id && f.id !== R.out.id) : ra;
+      const right = R ? rb.filter((f) => f.id === R.kept.id).map((f) => ({ ...f, ok: true })) : rb;
+      el("pickA").innerHTML = pickRows(left, "a"); el("pickB").innerHTML = pickRows(right, "b");
+      el("pickA").querySelectorAll("[data-f]").forEach((d) => (d.onclick = () => { add.a = Number(d.dataset.f); add.viewOnly = null; refreshPickers(); }));
+      el("pickB").querySelectorAll("[data-f]").forEach((d) => (d.onclick = () => { if (add.repl) return; add.b = Number(d.dataset.f); add.viewOnly = null; refreshPickers(); }));
+      await refreshPanels();
+    }
+    function panelHtml(f) {
+      if (!f) return `<p class="muted" style="padding:10px">Pick a fighter.</p>`;
+      const row = (t, cls = "") => `<div class="fp-row ${cls}">${t}</div>`;
+      return `<div class="fp-top">${portraitSvg(f.id, f.sex, f.promotionId, 64)}<div><b>${esc(f.name)}</b><div class="muted">${f.age} years old · ${esc(f.height)} · ${esc(f.division)}</div></div></div>`
+        + row(`From: ${esc(f.from)}`) + row(`Pro record: <b>${esc(f.record)}</b>, ${esc(f.recordHere)}`, "hl") + row(`Style: ${esc(f.style)} · overall ${f.overall}`)
+        + row(esc(f.rank), "hl") + (f.traits.length ? row(`Traits: ${f.traits.map(esc).join(", ")}`) : "")
+        + row(esc(f.camp.text), f.camp.ok ? "" : "bad") + row(`Pay: ${esc(f.pay)}`, "hl") + row(esc(f.popularity), "hl")
+        + row(`Likely usage: ${esc(f.usage)}`, "hl") + row(`Momentum: ${esc(f.momentum)}`) + row(`Last fight: ${esc(f.lastFight)}`, "hl");
+    }
+    async function refreshPanels() {
+      const ev = Number(el("abEvent").value);
+      const [pa, pb] = await Promise.all([add.a ? call("fighterPanel", add.a, ev) : null, add.b ? call("fighterPanel", add.b, ev) : null]);
+      el("panelA").innerHTML = panelHtml(pa); el("panelB").innerHTML = panelHtml(pb);
+      if (add.repl) el("abConfirm").disabled = true;
+      if (!add.a || !add.b) { el("matchCol").innerHTML = `<p class="muted">Pick a fighter on each side to see the draw, the betting line and their history.</p>`; el("matchCol2").innerHTML = ""; return; }
+      let title = el("abTitle").value === "1";
+      let m = await call("matchup", ev, add.a, add.b, title);
+      let beltNote = "";
+      if (add.repl && title && !m.preview.titleEligible) {
+        // The new matchup can't be for the belt: it goes on as a non-title fight.
+        title = false; m = await call("matchup", ev, add.a, add.b, false);
+        beltNote = `<p class="gold">Not eligible for the title: this becomes a non-title fight.</p>`;
+      }
+      const pv = m.preview;
+      if (!add.repl) el("abTitle").disabled = !pv.titleEligible && !title;
+      if (title) el("abRounds").value = "5";
+      el("matchCol").innerHTML = `<p>${esc(m.drawText)}</p><p>${esc(m.line)}</p><p class="muted">Hype ${pv.hype}/100 · competitiveness ${Math.round(pv.competitiveness * 100)}%</p>`;
+      const ok = pv.problems.length === 0 && !add.viewOnly;
+      el("matchCol2").innerHTML = beltNote + m.history.map((h) => `<p>${esc(h)}</p>`).join("")
+        + (m.ppvNote ? `<p class="bad">${esc(m.ppvNote)}</p>` : "")
+        + pv.notes.filter((n) => !n.startsWith("Draw in")).map((n) => `<p class="muted">· ${esc(n)}</p>`).join("")
+        + pv.problems.map((n) => `<p class="bad">✕ ${esc(n)}</p>`).join("")
+        + (add.viewOnly ? `<p class="muted">This bout is already on the card.</p>` : add.repl ? "" : `<button id="abBook" ${ok ? "" : "disabled"}>Add bout to card</button>`);
+      if (add.repl) { el("abConfirm").disabled = !ok; el("abConfirm").textContent = `Confirm ${pa ? pa.name : "replacement"}`; return; }
+      if (!add.viewOnly) el("abBook").onclick = async () => {
+        const r = await call("bookAt", ev, add.a, add.b, title, Number(el("abRounds").value), el("abPos").value);
+        if (!r.ok) { el("matchCol2").innerHTML += `<p class="bad">${esc(r.error)}</p>`; return; }
+        eventId = ev; add.a = add.b = null;
+        closeAdd(); deskMsg("Bout added."); refreshBooking();
+      };
+    }
+    function closeAdd() { el("deskAdd").hidden = true; el("deskShows").hidden = false; add.repl = add.replacing = null; el("abConfirm").hidden = true; el("replBanner").hidden = true;
+      for (const id of ["abPos", "abEvent", "abDiv", "abTitle", "abRounds", "nearbyB", "searchB"]) el(id).disabled = false; }
+    el("addBoutBtn").onclick = () => openAdd();
+    el("abBack").onclick = () => { closeAdd(); refreshBooking(); };
+    el("abConfirm").onclick = async () => {
+      const R = add.repl;
+      if (!R || !add.a) return;
+      const r = await call("lockReplacement", R.bookingId, add.a);
+      if (!r.ok) { el("matchCol2").innerHTML += `<p class="bad">${esc(r.error)}</p>`; return; }
+      const name = el("abConfirm").textContent.replace(/^Confirm /, "");
+      add.a = add.b = null; add.repl = add.replacing = null;
+      closeAdd(); deskMsg(`${name} steps in against ${R.kept.name}.`); refreshBooking();
+    };
+    el("abEvent").onchange = refreshPickers;
+    el("abDiv").onchange = async () => { add.a = add.b = null; await refreshTitleSel(false); refreshPickers(); };
+    el("abTitle").onchange = refreshPanels;
+    el("nearbyB").onchange = refreshPickers;
+    for (const s of ["searchA", "searchB"]) el(s).oninput = () => refreshPickers();
+    document.querySelectorAll(".sortBtn").forEach((b) => (b.onclick = () => { add.sort = b.dataset.sort; refreshPickers(); }));
+
+    // Results of a finished show (and callouts to book from them).
+    async function refreshCard(ev) {
+      const rows = await call("card", ev.id);
+      if (!rows.length) { el("cardView").innerHTML = `<p class="muted">No bouts on this card.</p>`; return; }
+      const info = await call("eventInfo", ev.id);
+      const money = (x) => x === null || x === undefined ? "-" : "$" + Math.round(x).toLocaleString("en-US");
+      const evHead = info ? `<div class="row"><span class="pill">${esc(info.broadcast ? info.broadcast.toUpperCase() : "broadcast not set")}</span>${info.region ? `<span class="pill">${esc(info.region)}</span>` : ""}${info.venue ? `<span class="pill">${esc(info.venue.replace("_", " "))}</span>` : ""}
+        ${info.rating !== null ? `<span class="pill">Card rating <b>${Math.round(info.rating)}</b></span>` : ""}</div>
+        ${info.status === "completed" ? `<div class="muted">Attendance ${(info.attendance ?? 0).toLocaleString("en-US")} · Gate ${money(info.gate)} ${info.ppv_buys ? ` · PPV buys ${info.ppv_buys.toLocaleString("en-US")} (${money(info.ppv_revenue)})` : ""}${info.tv_viewers ? ` · ${info.broadcast === "ppv" ? "Prelims on TV" : "TV viewers"} ${info.tv_viewers.toLocaleString("en-US")}${info.tv_revenue ? ` (${money(info.tv_revenue)})` : ""}` : ""} · Sponsors ${money(info.sponsors)} · Costs ${money(info.costs)} · <b class="${info.profit >= 0 ? "good" : "bad"}">Profit ${money(info.profit)}</b></div>` : ""}` : "";
+      let bookedIdx = 0;
+      el("cardView").innerHTML = evHead + rows.map((b) => {
+        const slot = b.status === "booked" || b.status === "completed" ? ++bookedIdx : null;
+        const divider = slot === 1 ? '<div class="segment">Main card</div>' : slot === 6 ? '<div class="segment">Prelims</div>' : "";
+        const head = `<b>${esc(b.red)}</b> vs <b>${esc(b.blue)}</b> <span class="muted">${esc(b.division)} · ${b.rounds} rds</span>${b.title ? ' <span class="gold">TITLE</span>' : ""}`;
+        let body = "";
+        if (b.status === "cancelled") body = `<span class="bad">Off: ${esc(b.reason)}</span>`;
+        else if (b.result) body = `<span class="good">${b.result.method === "DRAW" ? `Draw after ${b.result.round} rounds` : `${esc(b.result.winner)} by ${esc(METHOD[b.result.method] || b.result.method)}, round ${b.result.round}`}</span>${b.result.catchweight ? ' <span class="pill">catchweight</span>' : ""}${b.result.rating !== null ? ` <span class="pill">Rating ${Math.round(b.result.rating)}</span>` : ""}${b.result.fotn ? ' <span class="gold">FIGHT OF THE NIGHT</span>' : ""}${b.result.hasLog ? ` <button class="ghost" data-watch="${b.result.boutId}">Watch</button>` : ""}`;
+        const wi = b.weighIns.filter((w) => w.outcome !== "made").map((w) => `<div class="moment muted">Weigh-in: ${esc(w.who)} ${w.outcome} (${w.weight_kg} kg, limit ${w.limit_kg})${w.fine ? `, fined ${w.fine}` : ""}</div>`).join("");
+        const ms = b.moments.map((m) => `<div class="moment">${m.kind === "callout" ? '<span class="gold">CALLOUT</span>' : m.kind === "retirement" ? '<span class="bad">RETIRES</span>' : '<span class="muted">SPEECH</span>'} ${esc(m.who)}: "${esc(m.text)}"${m.kind === "callout" && m.targetId ? ` <button class="ghost" data-callout="${m.fighterId}:${m.targetId}">Book it</button>` : ""}</div>`).join("");
+        return `${divider}<div style="border-bottom:1px solid var(--line);padding:6px 0"><div>${slot ?? "-"}. ${head}</div><div>${body}</div>${wi}${ms}</div>`;
+      }).join("");
+      el("cardView").querySelectorAll("[data-watch]").forEach((x) => (x.onclick = () => { document.querySelector('nav button[data-tab="view"]').click(); openBout(Number(x.dataset.watch)); }));
+      el("cardView").querySelectorAll("[data-callout]").forEach((x) => (x.onclick = () => {
+        const [a, b] = x.dataset.callout.split(":").map(Number);
+        if (!shows.length) { deskMsg("Schedule a show first, then book the callout.", true); return; }
+        if (eventId === null) eventId = shows[0].id;
+        openAdd({ a, b });
+      }));
+    }
+    function alertBox(msg) { deskMsg(msg, true); }
+    (async () => {
+      const regions = await call("regions");
+      el("sfRegion").innerHTML = regions.map((r) => `<option value="${r.id}" ${r.home ? "selected" : ""}>${esc(r.name)}${r.home ? " (home)" : ""}</option>`).join("");
+      const venues = await call("venues");
+      el("sfVenue").innerHTML += venues.map((v) => `<option value="${v.key}">${esc(v.name)} (${v.capacity.toLocaleString("en-US")})</option>`).join("");
+    })();
+    el("newEvent").onclick = async () => {
+      eventId = await call("createEvent", Number(el("newWeeks").value), el("newName").value, Number(el("newRegion").value), el("newBroadcast").value, el("newVenue").value);
+      el("newName").value = ""; refreshAll();
+    };
+    (async () => {
+      const regions = await call("regions");
+      el("newRegion").innerHTML = regions.map((r) => `<option value="${r.id}" ${r.home ? "selected" : ""}>${esc(r.name)}${r.home ? " (home)" : ""}</option>`).join("");
+      const venues = await call("venues");
+      el("newVenue").innerHTML += venues.map((v) => `<option value="${v.key}">${esc(v.name)} (${v.capacity.toLocaleString("en-US")})</option>`).join("");
+    })();
+    el("adv1").onclick = async () => { await call("advance", 1); refreshAll(); };
+    el("advNext").onclick = async () => {
+      if (state?.fightNight) return openFightNight();
+      el("advNext").disabled = true;
+      const done = await call("advanceToNextEvent");
+      if (done) eventId = done;
+      await refreshAll();
+      document.querySelector('nav button[data-tab="book"]').click();
+    };
+
+    // Fight viewer
+    let current = null, timer = null;
+    function renderLines(lines) {
+      let r = 0;
+      el("pbp").innerHTML = lines.map((l) => `${l.round !== r ? `<div class="round">Round ${(r = l.round)}</div>` : ""}<div class="${l.big ? "big" : ""}">${esc(l.clock)} ${esc(l.text)}</div>`).join("");
+      el("pbp").scrollTop = el("pbp").scrollHeight;
+    }
+    async function openBout(id) {
+      clearInterval(timer);
+      current = await call("playByPlay", id);
+      if (!current) return;
+      el("pbp-title").textContent = `${current.red} vs ${current.blue}`;
+      el("pbp").innerHTML = "";
+    }
+    el("instant").onclick = () => { clearInterval(timer); if (current) renderLines(current.lines); };
+    el("live").onclick = () => {
+      if (!current) return;
+      clearInterval(timer);
+      let i = 0;
+      timer = setInterval(() => { i++; renderLines(current.lines.slice(0, i)); if (i >= current.lines.length) clearInterval(timer); }, 350);
+    };
+    async function refreshBouts() {
+      const bouts = await call("featuredBouts");
+      el("bouts").innerHTML = `<tr><th>Event</th><th>Fight</th><th>Result</th></tr>` + bouts.map((b) =>
+        `<tr data-id="${b.id}" style="cursor:pointer"><td>${esc(b.event)}</td><td>${esc(b.red)} vs ${esc(b.blue)}</td><td>${esc(b.winner === "draw" ? "Draw" : (b.winner === "red" ? b.red : b.blue) + " by " + b.method + " R" + b.round)}</td></tr>`).join("");
+      el("bouts").querySelectorAll("tr[data-id]").forEach((tr) => (tr.onclick = () => openBout(Number(tr.dataset.id))));
+    }
+    async function refreshWorld() {
+      const promos = await call("promotions");
+      const tierF = el("promoTier").value;
+      const usdS = (n) => (Math.abs(n) >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n / 1000)}k`);
+      const cal = (c) => !c ? "" : [c.ppv ? `<b>${c.ppv}</b> PPV` : "", c.tv ? `<b>${c.tv}</b> TV` : "", c.none ? `<b>${c.none}</b> untelevised` : ""].filter(Boolean).join(" · ");
+      const nextK = (n) => !n ? "" : `${n.kind === "ppv" ? '<span class="gold">PPV</span>' : n.kind === "tv" ? "TV card" : "Show"} in ${n.inWeeks} wk`;
+      el("promos").innerHTML = `<tr><th>Name</th><th>Size</th><th>Region</th><th>Model</th><th>Goal</th><th>Broadcast partners</th><th>Cards this year</th><th>Next</th><th>Roster</th><th>Cash</th></tr>` +
+        promos.filter((p) => !tierF || p.tier === tierF).map((p) => `<tr><td><b>${esc(p.name)}</b>${p.mine ? ' <span class="pill">you</span>' : ""}</td><td>${p.tier}</td><td>${esc(p.region)}</td>
+          <td title="${esc(p.flavorBlurb ?? "")}">${esc(p.flavor ?? (p.mine ? "Yours to run" : ""))}</td><td title="${esc(p.goalBlurb ?? "")}">${esc(p.goal ?? "")}</td>
+          <td class="muted">${[p.tv, p.ppv ? `${p.ppv} (PPV)` : null].filter(Boolean).map(esc).join(" + ") || (p.mine ? "" : "none")}</td>
+          <td>${cal(p.calendar)}</td><td class="muted">${nextK(p.next)}</td><td>${p.roster}</td><td class="${p.cash >= 0 ? "" : "bad"}">${usdS(p.cash)}</td></tr>`).join("");
+      el("promoTier").onchange = refreshWorld;
+      const top = await call("topFighters", 100);
+      el("fighters").innerHTML = `<tr><th>Name</th><th>Division</th><th>Promotion</th><th>Record</th><th>Rating</th></tr>` + top.map((f) => `<tr><td>${esc(f.name)}</td><td>${esc(f.division)}</td><td>${esc(f.promotion)}</td><td>${f.record}</td><td>${f.rating}</td></tr>`).join("");
+    }
+    // Rankings
+    let rkScope = "world", rkList = 0, rkReady = false;
+    async function refreshRankings() {
+      if (!rkReady) {
+        const promos = await call("promotions");
+        el("rkScope").innerHTML = `<option value="world">Worldwide</option><option value="${promos.find((p) => p.name === state.promotion)?.id}">${esc(state.promotion)} (you)</option>` +
+          promos.filter((p) => p.name !== state.promotion && p.tier !== "local").map((p) => `<option value="${p.id}">${esc(p.name)} (${p.tier})</option>`).join("");
+        const divs = ["Flyweight", "Bantamweight", "Featherweight", "Lightweight", "Welterweight", "Middleweight", "Light Heavyweight", "Heavyweight",
+          "Women's Atomweight", "Women's Strawweight", "Women's Flyweight", "Women's Bantamweight", "Women's Featherweight"];
+        el("rkList").innerHTML = `<option value="0">Pound-for-pound</option>` + divs.map((d, i) => `<option value="${i + 1}">${d}</option>`).join("");
+        el("rkScope").onchange = () => { rkScope = el("rkScope").value === "world" ? "world" : Number(el("rkScope").value); refreshRankings(); };
+        el("rkList").onchange = () => { rkList = Number(el("rkList").value); refreshRankings(); };
+        rkReady = true;
+      }
+      const rows = await call("rankings", rkScope, rkList);
+      const move = (r) => {
+        if (r.rank === "C") return "";
+        if (r.prev === null) return '<span class="muted">new</span>';
+        const d = r.prev - Number(r.rank);
+        return d > 0 ? `<span class="good">▲${d}</span>` : d < 0 ? `<span class="bad">▼${-d}</span>` : '<span class="muted">–</span>';
+      };
+      el("rkTbl").innerHTML = `<tr><th>Rank</th><th></th><th>Fighter</th>${rkList === 0 ? "<th>Division</th>" : ""}${rkScope === "world" ? "<th>Promotion</th>" : ""}<th>Record</th></tr>` +
+        (rows.length ? rows.map((r) => `<tr data-id="${r.id}" style="cursor:pointer"><td>${r.rank === "C" ? '<span class="gold">C</span>' : r.rank}</td><td>${move(r)}</td>
+          <td>${esc(r.name)}${r.belt ? ' <span class="gold" title="' + esc(r.belt) + '">★</span>' : ""}</td>${rkList === 0 ? `<td>${esc(r.division)}</td>` : ""}${rkScope === "world" ? `<td>${esc(r.promotion)}</td>` : ""}<td>${esc(r.record)}</td></tr>`).join("")
+          : `<tr><td colspan="5" class="muted">Nobody ranked yet.</td></tr>`);
+      el("rkTbl").querySelectorAll("tr[data-id]").forEach((tr) => (tr.onclick = () => showProfile(Number(tr.dataset.id))));
+    }
+    let profTab = "general";
+    function statBars(groups) {
+      const color = (v) => v >= 80 ? "var(--good)" : v >= 60 ? "#9fc35a" : v >= 40 ? "var(--gold)" : "var(--bad)";
+      return groups.map((g) => `<div><h4 class="ptitle">${esc(g.title)}</h4>${g.rows.map((r) => `<div class="stat"><span>${esc(r.label)}</span>
+        <div class="bar"><div style="width:${r.value}%;background:${color(r.value)}"></div></div><b>${r.value}</b></div>${r.note ? `<div class="muted hnote">${esc(r.note)}</div>` : ""}`).join("")}</div>`).join("");
+    }
+    function bodySvg(parts) {
+      const h = Object.fromEntries(parts.map((p) => [p.part, p.health]));
+      const c = (v) => v >= 85 ? "#4caf72" : v >= 65 ? "#9fc35a" : v >= 40 ? "#e0a33a" : "#d9534f";
+      return `<svg width="120" height="220" viewBox="0 0 120 220">
+        <circle cx="60" cy="24" r="18" fill="${c(h.Head)}"/>
+        <rect x="38" y="46" width="44" height="70" rx="10" fill="${c(h.Body)}"/>
+        <rect x="16" y="48" width="18" height="66" rx="8" fill="${c(h.Arms)}"/><rect x="86" y="48" width="18" height="66" rx="8" fill="${c(h.Arms)}"/>
+        <rect x="40" y="120" width="18" height="92" rx="8" fill="${c(h.Legs)}"/><rect x="62" y="120" width="18" height="92" rx="8" fill="${c(h.Legs)}"/></svg>`;
+    }
+    async function showProfile(id) {
+      const f = await call("fighterProfile", id);
+      if (!f) { el("profile").innerHTML = '<p class="muted">This fighter has retired.</p>'; return; }
+      const g = f.general;
+      const tabs = [["general", "General"], ["health", "Health"], ["standup", "Standup"], ["clinch", "Clinch"], ["ground", "Ground"], ["record", "Rankings and fights"]];
+      const body = {
+        general: `<table class="kv">
+            <tr><td>Name</td><td><b>${esc(f.name)}</b>${g.nickname ? ` "${esc(g.nickname)}"` : ""}</td></tr>
+            <tr><td>Born</td><td>${esc(g.born)}</td></tr><tr><td>From</td><td>${esc(g.from)}</td></tr>
+            <tr><td>Height</td><td>${esc(g.height)}</td></tr><tr><td>Reach</td><td>${esc(g.reach)}</td></tr>
+            <tr><td>Stance</td><td>${esc(g.stance)}</td></tr><tr><td>Division</td><td>${esc(g.weight)}</td></tr>
+            <tr><td>Style</td><td><b>${esc(g.style)}</b>${g.base ? ` · background in ${esc(g.base)}` : ""}</td></tr>
+            <tr><td>Game plan</td><td>${esc(f.style)}</td></tr><tr><td>Read</td><td>${esc(f.gameSummary)}</td></tr>
+            <tr><td>Wins by</td><td>${esc(g.finishes)}</td></tr></table>
+          <h4 class="ptitle">Popularity</h4>
+          <div class="stat"><span>Worldwide</span><div class="bar"><div style="width:${f.popularity}%;background:var(--gold)"></div></div><b>${f.popularity}</b></div>
+          <h4 class="ptitle">Personality</h4>
+          <div style="max-width:460px"><div class="flairBar"><i style="left:${f.flair}%"></i></div>
+            <div class="flairEnds"><span>Stoic, business-like</span><span>Outlandish showman</span></div>
+            <div style="margin-top:4px"><b>${esc(f.flairLabel)}</b> <span class="muted">(${f.flair}/100). ${f.flair < 40 ? "Lets the fighting do the talking; callouts are polite and draw little extra interest." : f.flair < 60 ? "Speaks well and keeps it respectful." : "Sells fights on the mic; callouts get people talking."} A callout adds about +${f.calloutHype} hype to the fight it sets up.</span></div></div>
+          ${g.traits.length ? `<h4 class="ptitle">Traits</h4>${g.traits.map((t) => `<div><span class="pill">${esc(t.name)}</span> <span class="muted">${esc(t.text)}</span></div>`).join("")}` : ""}
+          <h4 class="ptitle">Popularity by region</h4>
+          ${g.regionPop.map((r) => `<div class="stat"><span>${esc(r.region)}${r.home ? " (home)" : ""}</span><div class="bar"><div style="width:${r.pop}%;background:${r.level === "main event" ? "var(--gold)" : r.level === "main card" ? "#9fc35a" : "#5a6270"}"></div></div><b>${r.pop}</b></div><div class="muted hnote">${r.level} draw</div>`).join("")}
+          <h4 class="ptitle">Accolades</h4>
+          ${[...g.pro.map((a) => `<div class="acc gold">★ ${esc(a)}</div>`), ...(g.fotn ? [`<div class="acc">🔥 ${g.fotn} Fight of the Night bonus${g.fotn === 1 ? "" : "es"}</div>`] : []), ...g.reality.map((a) => `<div class="acc">📺 ${esc(a)}</div>`), ...g.amateur.map((a) => `<div class="acc">${/Olympic/.test(a) ? "🏅" : "•"} ${esc(a)}</div>`)].join("") || '<p class="muted">None yet.</p>'}`,
+        health: `<div class="healthwrap">${bodySvg(f.health.parts)}<div style="flex:1">
+            ${f.health.parts.map((p) => `<div class="stat"><span>${p.part}</span><div class="bar"><div style="width:${p.health}%;background:${p.health >= 85 ? "var(--good)" : p.health >= 65 ? "#9fc35a" : p.health >= 40 ? "var(--gold)" : "var(--bad)"}"></div></div><b>${p.health}</b></div>
+            <div class="muted hnote">${esc(p.note)}</div>`).join("")}
+            <p><b>Career outlook:</b> ${esc(f.health.outlook)}</p></div></div>`,
+        standup: statBars(f.standup), clinch: statBars(f.clinch),
+        ground: `<p class="muted">${esc(f.gameSummary)}</p><div class="grid2">${statBars(f.ground.slice(0, 1))}${statBars(f.ground.slice(3))}${statBars(f.ground.slice(1, 2))}${statBars(f.ground.slice(2, 3))}</div>`,
+        record: `<h4 class="ptitle">Rankings</h4><table>${f.ranks.map((r) => `<tr><td>${esc(r.label)}</td><td><b>${r.value === null ? '<span class="muted">unranked</span>' : r.value === "C" ? '<span class="gold">Champion</span>' : "#" + r.value}</b></td></tr>`).join("")}</table>
+          <h4 class="ptitle">Recent fights</h4><table>${f.recent.map((b) => `<tr><td class="${b.result === "W" ? "good" : b.result === "L" ? "bad" : ""}">${b.result}</td><td>${esc(b.opponent)}</td><td>${esc(METHOD[b.method] || b.method)} R${b.round}${b.title ? ' <span class="gold">title</span>' : ""}</td><td class="muted">${esc(b.event)}</td></tr>`).join("") || '<tr><td class="muted">No recorded fights yet.</td></tr>'}</table>`,
+      };
+      el("profile").innerHTML = `<div class="phead">${portraitSvg(f.id, g.sex, f.promotionId, 96)}<div>
+          <h2 style="margin:0">${esc(f.name)}</h2>${g.nickname ? `<div class="nick">"${esc(g.nickname)}"</div>` : ""}
+          <div class="muted">${esc(g.style)} · ${esc(f.division)} · ${esc(f.promotion)}</div>
+          <div class="row"><span class="pill">Record ${esc(f.record)}</span><span class="pill">Streak ${esc(f.streak)}</span><span class="pill">Overall ${f.overall}</span><span class="pill">Popularity ${f.popularity}</span></div>
+          ${f.belt ? `<div class="gold">★ ${esc(f.belt)}</div>` : ""}
+          ${f.belts.length > 1 ? `<div class="muted">Double champion: each belt must be defended within a year. ${f.belts.map((b) => `${esc(b.label)} due by ${esc(b.defendBy)}${b.mine ? ` <button class="ghost" data-vacate="${b.titleId}">Vacate ${esc(b.label)}</button>` : ""}`).join(" · ")}</div>` : ""}</div></div>
+        <div class="ptabs">${tabs.map(([k, l]) => `<button class="${k === profTab ? "" : "ghost"}" data-ptab="${k}">${l}</button>`).join("")}</div>
+        <div class="pbody">${body[profTab]}</div>`;
+      el("profile").querySelectorAll("[data-ptab]").forEach((b) => (b.onclick = () => { profTab = b.dataset.ptab; showProfile(id); }));
+      el("profile").querySelectorAll("[data-vacate]").forEach((b) => (b.onclick = async () => { await call("vacateTitle", Number(b.dataset.vacate)); showProfile(id); }));
+    }
+
+    // News
+    let newsScope = "world";
+    document.querySelectorAll("[data-news]").forEach((b) => (b.onclick = () => { newsScope = b.dataset.news; refreshNews(); }));
+    el("newsKind").onchange = refreshNews;
+    el("newsBig").onchange = refreshNews;
+    // ---- Generated art: no image files, every fighter and promotion gets a seeded picture.
+    function seeded(n) { let a = (n * 2654435761) >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+    const pickR = (r, xs) => xs[Math.floor(r() * xs.length)];
+    function promoColors(id) { const r = seeded(id * 7919 + 13); const h = Math.floor(r() * 360); return [`hsl(${h} 62% 38%)`, `hsl(${(h + 30 + Math.floor(r() * 150)) % 360} 70% 58%)`]; }
+    function initials(name) { return name.split(/\s+/).filter((w) => /^[A-Z]/.test(w)).map((w) => w[0]).join("").slice(0, 3); }
+    function logoSvg(id, name, tier, size) {
+      const [c1, c2] = promoColors(id), r = seeded(id * 31 + 7), shape = Math.floor(r() * 3), u = `lg${id}_${size}`;
+      const body = shape === 0 ? `<path d="M50 6 L90 20 L86 60 Q80 84 50 96 Q20 84 14 60 L10 20 Z"/>`
+        : shape === 1 ? `<circle cx="50" cy="50" r="44"/>` : `<path d="M50 5 L90 27 L90 73 L50 95 L10 73 L10 27 Z"/>`;
+      const stars = { global: 3, major: 2, regional: 1 }[tier] ?? 0;
+      const st = Array.from({ length: stars }, (_, i) => `<text x="${50 + (i - (stars - 1) / 2) * 12}" y="84" font-size="11" text-anchor="middle" fill="${c2}">★</text>`).join("");
+      return `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><defs><linearGradient id="${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="#111"/></linearGradient></defs>
+        <g fill="url(#${u})" stroke="${c2}" stroke-width="3">${body}</g>
+        <text x="50" y="${stars ? 60 : 64}" font-family="Georgia, serif" font-weight="700" font-size="${initials(name).length > 2 ? 26 : 32}" text-anchor="middle" fill="#fff">${esc(initials(name))}</text>${st}</svg>`;
+    }
+    function portraitSvg(fid, sex, promoId, size) {
+      const r = seeded(fid), [c1] = promoColors(promoId ?? 0), u = `pt${fid}_${size}`;
+      const skin = pickR(r, ["#f1c7a5", "#e0ac83", "#c68a5e", "#a56b43", "#7d4a2c", "#5a3520"]);
+      const hair = pickR(r, ["#1b1410", "#3a2416", "#6b4423", "#a5753f", "#d6b26a", "#8c8c8c"]);
+      const style = sex === "F" ? pickR(r, ["bun", "braids", "pony", "short"]) : pickR(r, ["buzz", "bald", "short", "beard", "mohawk"]);
+      const shorts = pickR(r, ["#c8402f", "#2f6fc8", "#222", "#e6e6e6", "#2fa36b", "#d4a017"]);
+      let hairSvg = "";
+      if (style === "buzz" || style === "short" || style === "beard") hairSvg = `<path d="M30 38 Q32 14 50 14 Q68 14 70 38 Q64 26 50 26 Q36 26 30 38Z" fill="${hair}"/>`;
+      if (style === "beard") hairSvg += `<path d="M34 50 Q36 72 50 74 Q64 72 66 50 Q60 64 50 64 Q40 64 34 50Z" fill="${hair}"/>`;
+      if (style === "mohawk") hairSvg = `<path d="M45 30 Q46 8 50 8 Q54 8 55 30Z" fill="${hair}"/>`;
+      if (style === "bun") hairSvg = `<circle cx="50" cy="12" r="8" fill="${hair}"/><path d="M30 40 Q30 16 50 16 Q70 16 70 40 Q64 26 50 26 Q36 26 30 40Z" fill="${hair}"/>`;
+      if (style === "pony") hairSvg = `<path d="M30 40 Q30 16 50 16 Q70 16 70 40 Q64 26 50 26 Q36 26 30 40Z" fill="${hair}"/><path d="M68 30 Q82 40 74 66 Q70 50 64 36Z" fill="${hair}"/>`;
+      if (style === "braids") hairSvg = `<path d="M30 40 Q30 16 50 16 Q70 16 70 40 Q64 26 50 26 Q36 26 30 40Z" fill="${hair}"/><path d="M31 38 L28 72 L34 72 L35 44Z M69 38 L72 72 L66 72 L65 44Z" fill="${hair}"/>`;
+      const top = sex === "F" ? `<path d="M30 84 Q50 92 70 84 L72 100 L28 100Z" fill="${shorts}"/>` : "";
+      return `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><defs><radialGradient id="${u}" cx="50%" cy="35%" r="75%"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="#0d0f12"/></radialGradient></defs>
+        <rect width="100" height="100" fill="url(#${u})"/>
+        <path d="M8 100 Q10 74 34 70 L42 62 L58 62 L66 70 Q90 74 92 100Z" fill="${skin}"/>${top}
+        <rect x="43" y="54" width="14" height="14" fill="${skin}"/>
+        <ellipse cx="50" cy="40" rx="20" ry="25" fill="${skin}"/>
+        <circle cx="42.5" cy="40" r="2" fill="#1a1a1a"/><circle cx="57.5" cy="40" r="2" fill="#1a1a1a"/>
+        <path d="M44 53 Q50 56 56 53" stroke="#3a2016" stroke-width="1.6" fill="none"/>${hairSvg}</svg>`;
+    }
+    function artFor(n, size) {
+      const logo = (s) => n.promotion_id ? logoSvg(n.promotion_id, n.promotion ?? "", n.tier, s) : "";
+      if (!n.fighter_id) return `<figure class="art">${logo(size)}<figcaption>${esc(n.promotion ?? "")}</figcaption></figure>`;
+      const badge = n.promotion_id ? `<div style="position:absolute;right:-6px;bottom:-6px">${logo(Math.round(size * 0.36))}</div>` : "";
+      return `<figure class="art"><div style="position:relative">${portraitSvg(n.fighter_id, n.sex, n.promotion_id, size)}${badge}</div>
+        <figcaption>${esc(n.fname ?? "")}</figcaption></figure>`;
+    }
+    const paras = (story, n) => story.split("\n\n").slice(0, n).map((p) => `<p>${esc(p)}</p>`).join("");
+    const firstSentence = (story) => (story.split("\n\n")[0].match(/^.*?[.!?](?=\s|$)/) ?? [story])[0];
+    const kicker = (n) => `<div class="kicker">${esc(n.promotion ?? "Around the sport")} · ${esc(n.kind)} · week ${n.week % 52 + 1}</div>`;
+    const profBtn = (n) => n.fighter_id ? `<button class="storylink" data-prof="${n.fighter_id}">Fighter profile</button>` : "";
+
+    async function refreshFront() {
+      const f = await call("newsFront", newsScope);
+      if (!f.lead) { el("front").innerHTML = `<p class="muted">No big stories in the last month.</p>`; return; }
+      el("front").innerHTML = `<div class="masthead"><b>The Fight Wire</b><span class="muted">${esc(el("clock").textContent.split(" · ")[0])}</span></div>
+        <article class="lead">${artFor(f.lead, 190)}${kicker(f.lead)}<h2>${esc(f.lead.headline)}</h2>${paras(f.lead.story, 3)}${profBtn(f.lead)}</article>
+        ${f.second.length ? `<div class="seconds">${f.second.map((n) => `<article>${artFor(n, 100)}${kicker(n)}<h3>${esc(n.headline)}</h3>${paras(n.story, 1)}${profBtn(n)}</article>`).join("")}</div>` : ""}
+        ${f.briefs.length ? `<div class="briefs">${f.briefs.map((n) => `<article>${kicker(n)}<h4>${esc(n.headline)}</h4><p>${esc(firstSentence(n.story))}</p></article>`).join("")}</div>` : ""}`;
+      el("front").querySelectorAll("[data-prof]").forEach((b) => (b.onclick = () => { document.querySelector('nav button[data-tab="ranks"]').click(); showProfile(Number(b.dataset.prof)); }));
+    }
+
+    async function refreshNews() {
+      document.querySelectorAll("[data-news]").forEach((b) => b.classList.toggle("ghost", b.dataset.news !== newsScope));
+      await refreshFront();
+      const items = await call("newsFeed", newsScope, el("newsKind").value, el("newsBig").checked ? 3 : 1, 120);
+      el("newsList").innerHTML = items.map((n) => `<div class="row" style="border-bottom:1px solid var(--line);padding:4px 0">
+        <span class="pill">wk ${n.week % 52 + 1}</span><span class="pill">${esc(n.kind)}</span>${n.promotion ? `<span class="muted">${esc(n.promotion)}</span>` : ""}
+        <span class="${n.importance >= 3 ? "gold" : ""}">${esc(n.text)}</span>${n.fighter_id ? ` <button class="ghost" data-prof="${n.fighter_id}">Profile</button>` : ""}</div>`).join("") || '<p class="muted">Nothing yet.</p>';
+      el("newsList").querySelectorAll("[data-prof]").forEach((b) => (b.onclick = async () => { document.querySelector('nav button[data-tab="ranks"]').click(); showProfile(Number(b.dataset.prof)); }));
+    }
+
+    async function refreshHof() {
+      const scopes = await call("hallScopes");
+      const cur = el("hofScope").value || (scopes[1]?.id ?? "global");
+      el("hofScope").innerHTML = scopes.map((x) => `<option value="${x.id}" ${String(x.id) === String(cur) ? "selected" : ""}>${esc(x.name)}</option>`).join("");
+      const v = el("hofScope").value;
+      const rows = await call("hallOfFame", v === "global" ? "global" : Number(v));
+      el("hofCount").textContent = `${rows.length} inductees`;
+      let lastYear = null;
+      el("hofList").innerHTML = rows.map((r) => {
+        const head = r.year !== lastYear ? `<h3 class="hofyear">Class of ${r.year}</h3>` : "";
+        lastYear = r.year;
+        return `${head}<div class="hofcard">${portraitSvg(r.fighter_id, r.sex, r.promotionId, 72)}<div>
+          <div><b>${esc(r.name)}</b>${r.nickname ? ` <span class="nick">"${esc(r.nickname)}"</span>` : ""} <span class="muted">${esc(r.division)} · ${r.wins}-${r.losses}${r.draws ? "-" + r.draws : ""}</span></div>
+          <div>${esc(r.citation)}</div></div></div>`;
+      }).join("") || '<p class="muted">No one inducted yet.</p>';
+    }
+    el("hofScope").onchange = refreshHof;
+
+    let recScope = "world";
+    const usd = (x) => (x < 0 ? "-$" : "$") + Math.abs(Math.round(x)).toLocaleString("en-US");
+    async function refreshBiz() {
+      const b = await call("business");
+      el("bizCash").innerHTML = `<div class="row"><span class="pill">Cash <b class="${b.cash >= 0 ? "good" : "bad"}">${usd(b.cash)}</b></span><span class="pill">Brand ${b.brand}/100</span>
+        ${b.media.network ? `<span class="pill">${esc(b.media.networkName)}: ${b.media.subscribers.toLocaleString("en-US")} subscribers</span>` : ""}</div>`;
+      el("bizOutlets").innerHTML = `<table><tr><th></th><th>Outlet</th><th>Reach</th><th>Terms</th></tr>
+        <tr><td>TV</td><td>${b.tv ? esc(b.tv.name) : '<span class="muted">none</span>'}</td><td>${b.tv ? b.tv.reach : ""}</td><td>${b.deals.filter((d) => d.kind === "tv").map((d) => `${usd(d.feePerEvent)}/event, ${d.eventsThisYear}/${d.eventsPerYear} events this year, ends ${d.endsYear}`).join("") || (b.tv ? "your own network" : "")}</td></tr>
+        <tr><td>PPV</td><td>${b.ppv ? esc(b.ppv.name) : '<span class="muted">none</span>'}</td><td>${b.ppv ? b.ppv.reach : ""}</td><td>${b.ppv ? `you keep ${Math.round(b.ppv.share * 100)}%` : ""}${b.deals.filter((d) => d.kind === "ppv").map((d) => `, ends ${d.endsYear}`).join("")}</td></tr></table>
+        <p class="muted">Each event is a TV card or a PPV card, so with both you run the hybrid model. PPV prelims air on your TV outlet.</p>`;
+      el("bizOffers").innerHTML = b.offers.length ? `<h4 class="ptitle">Offers</h4>` + b.offers.map((o) => `<div class="row"><b>${esc(o.network)}</b><span class="muted">${o.kind.toUpperCase()} · reach ${o.reach} · ${o.kind === "tv" ? `${usd(o.feePerEvent)} per event, ${o.eventsPerYear} events a year, ${o.years} years` : `you keep ${Math.round(o.share * 100)}% of buys, ${o.years} years`}</span><button class="ghost" data-sign="${o.networkId}">Sign</button></div>`).join("") : '<p class="muted">No networks are offering right now. Grow your brand.</p>';
+      el("bizOwn").innerHTML = `<h4 class="ptitle">Your own media</h4>
+        ${b.media.network ? "" : `<div class="row"><input id="netName" placeholder="Network name"><button class="ghost" id="launchNet">Launch own network (${usd(b.money.ownNetworkLaunch)}, ${usd(b.money.ownNetworkWeekly)}/week)</button></div>`}
+        ${b.media.ppv ? "" : `<div class="row"><button class="ghost" id="launchPpv">Launch own PPV platform (${usd(b.money.ownPpvLaunch)})</button><span class="muted">Keep ${Math.round(b.money.ownPpvShare * 100)}% of buys, smaller reach.</span></div>`}`;
+      const msg = (r) => { el("bizMsg").textContent = r.ok ? "" : r.error; refreshBiz(); };
+      el("bizOffers").querySelectorAll("[data-sign]").forEach((x) => (x.onclick = async () => msg(await call("signDeal", Number(x.dataset.sign)))));
+      if (el("launchNet")) el("launchNet").onclick = async () => msg(await call("launchNetwork", el("netName").value));
+      if (el("launchPpv")) el("launchPpv").onclick = async () => msg(await call("launchPpv"));
+      const s = b.season;
+      el("bizReality").innerHTML = s ? `<b>${esc(s.name)}</b> <span class="muted">${s.episodes} episodes aired · ${s.viewers.toLocaleString("en-US")} viewers</span>
+          <table>${s.bouts.map((x) => `<tr><td>Ep ${x.episode}</td><td>${esc(x.stage)}</td><td><b>${esc(x.winner)}</b> def. ${esc(x.winner === x.red ? x.blue : x.red)}</td><td class="muted">${esc(METHOD[x.method] || x.method)} R${x.end_round}</td></tr>`).join("")}</table>
+          <h4 class="ptitle">Cast</h4>${s.cast.map((c) => `<span class="pill ${c.status === "out" ? "muted" : ""}">${esc(c.name)}${c.status !== "in" && c.status !== "out" ? " · " + c.status : ""}</span>`).join(" ")}`
+        : `<p class="muted">Sixteen unsigned prospects, two divisions, one fight per weekly episode on your TV outlet. Finalists sign with you. ${b.pastSeasons.length} seasons aired so far.</p>
+          <div class="row"><select id="rsA">${b.castingDivisions.map((d) => `<option value="${d.id}">${esc(d.name)}</option>`).join("")}</select>
+          <select id="rsB">${b.castingDivisions.map((d, i) => `<option value="${d.id}" ${i === 1 ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select>
+          <button id="rsStart">Start a season</button></div>`;
+      if (el("rsStart")) el("rsStart").onclick = async () => msg(await call("startReality", Number(el("rsA").value), Number(el("rsB").value)));
+      el("bizEvents").innerHTML = `<table><tr><th>Event</th><th>Where</th><th>Type</th><th>Rating</th><th>Crowd</th><th>Gate</th><th>PPV buys</th><th>PPV $</th><th>TV viewers</th><th>TV $</th><th>Sponsors</th><th>Costs</th><th>Profit</th></tr>
+        ${b.recent.map((e) => `<tr><td>${esc(e.name)}</td><td>${esc(e.region)}</td><td>${esc((e.broadcast || "").toUpperCase())}</td><td>${e.rating ? Math.round(e.rating) : "-"}</td><td>${(e.attendance ?? 0).toLocaleString("en-US")}</td><td>${usd(e.gate ?? 0)}</td><td>${(e.ppv_buys ?? 0).toLocaleString("en-US")}</td><td>${usd(e.ppv_revenue ?? 0)}</td><td>${(e.tv_viewers ?? 0).toLocaleString("en-US")}</td><td>${usd(e.tv_revenue ?? 0)}</td><td>${usd(e.sponsors ?? 0)}</td><td>${usd(e.costs ?? 0)}</td><td class="${(e.profit ?? 0) >= 0 ? "good" : "bad"}">${usd(e.profit ?? 0)}</td></tr>`).join("")}</table>`;
+      refreshRecords();
+    }
+    async function refreshRecords() {
+      document.querySelectorAll("[data-rec]").forEach((x) => x.classList.toggle("ghost", x.dataset.rec !== recScope));
+      const r = await call("records", recScope);
+      const evList = (title, xs, fmt) => `<div><h4 class="ptitle">${title}</h4>${xs.map((x, i) => `<div>${i + 1}. ${esc(x.name)} <span class="muted">${x.name.startsWith(x.promotion) ? "" : esc(x.promotion) + ", "}${x.year}</span> · <b>${fmt(x.value)}</b></div>`).join("") || '<p class="muted">None yet.</p>'}</div>`;
+      const fList = (title, xs) => `<div><h4 class="ptitle">${title}</h4>${xs.map((x, i) => `<div>${i + 1}. ${esc(x.fight)} <span class="muted">${esc(x.event)}, ${x.year}, ${esc(METHOD[x.method] || x.method)} R${x.end_round}</span> · <b>${Math.round(x.value)}</b></div>`).join("") || '<p class="muted">None yet.</p>'}</div>`;
+      el("bizRecords").innerHTML = `<div class="grid3">
+        ${evList("Highest gate", r.highestGate, usd)}${evList("Most PPV buys", r.highestPpv, (v) => v.toLocaleString("en-US"))}${evList("Biggest crowd", r.mostAttended, (v) => v.toLocaleString("en-US"))}
+        ${evList("Best card", r.bestCard, Math.round)}${evList("Worst card", r.worstCard, Math.round)}
+        <div><h4 class="ptitle">Most Fight of the Night bonuses</h4>${r.mostFotn.map((x, i) => `<div>${i + 1}. ${esc(x.name)} · <b>${x.value}</b></div>`).join("") || '<p class="muted">None yet.</p>'}</div>
+        ${fList("Best fight", r.bestFight)}${fList("Worst fight", r.worstFight)}</div>`;
+    }
+    document.querySelectorAll("[data-rec]").forEach((x) => (x.onclick = () => { recScope = x.dataset.rec; refreshRecords(); }));
+
+    // ------------------------------------------------------------ Fight night
+    // The game stops on the eve of each show. Pick the bouts to watch, then the
+    // card runs in order from the first prelim: picked bouts play live, the rest
+    // show their result, and every winner gets the mic.
+    const fn = { data: null, picks: new Set(), results: null, idx: 0, timer: null, speed: 450, shownFor: null, log: [] };
+    const fnEl = () => el("fnBody");
+    const recLine = (c) => `${esc(c.record)} · ${esc(c.rank)}`;
+    function fnOpen() { el("fn").classList.add("on"); document.body.style.overflow = "hidden"; }
+    function fnClose() { clearInterval(fn.timer); el("fn").classList.remove("on"); document.body.style.overflow = ""; }
+    function micHtml(m) {
+      const what = m.kind === "callout" ? `calls out <b>${esc(m.target)}</b>` : m.kind === "retirement" ? "announces retirement" : "on the mic";
+      return `<div class="mic ${m.kind === "callout" && m.flair >= 60 ? "hot" : ""}"><div class="who">${esc(m.name)} · ${what} · <span title="Personality: ${m.flair}/100">${esc(m.flairLabel)}</span></div><div class="q">"${esc(m.text)}"</div></div>`;
+    }
+    function resultLine(b) {
+      if (b.cancelled) return `<span class="bad">Off: ${esc(b.cancelled)}</span>`;
+      const r = b.result;
+      const how = r.winner === "draw" ? `Draw (${esc(METHOD[r.method] || r.method)})` : `<b>${esc(r.winnerName)}</b> by ${esc(METHOD[r.method] || r.method)}, round ${r.round} (${r.time})`;
+      const belt = r.champion ? (r.newChampion ? ` <span class="gold">and NEW ${esc(b.title)} champion</span>` : ` <span class="gold">and still ${esc(b.title)} champion</span>`) : "";
+      return how + belt + (r.fotn ? ' <span class="pill">Fight of the Night</span>' : "");
+    }
+    async function openFightNight() {
+      const data = await call("fightNight");
+      if (!data) return;
+      Object.assign(fn, { data, results: null, idx: 0, log: [], shownFor: data.show.id });
+      fn.picks = new Set(data.bouts.map((b) => b.bookingId));
+      el("fnTitle").textContent = data.show.name;
+      el("fnSub").textContent = `${data.show.date}${data.show.region ? " · " + data.show.region : ""}${data.show.venue ? " · " + data.show.venue : ""}`;
+      renderFnCard();
+      fnOpen();
+    }
+    function renderFnCard() {
+      const d = fn.data, mc = d.show.mainCardSize;
+      const row = (b) => `<tr class="${fn.picks.has(b.bookingId) ? "" : "skip"}"><td class="chk"><input type="checkbox" data-pick="${b.bookingId}" ${fn.picks.has(b.bookingId) ? "checked" : ""}></td>
+        <td class="muted">${esc(b.slot)}</td><td class="redn">${esc(b.red.name)}<div class="muted" style="font-weight:400">${recLine(b.red)} · ${b.odds.red}</div></td>
+        <td class="muted" style="text-align:center">vs</td><td class="bluen">${esc(b.blue.name)}<div class="muted" style="font-weight:400">${recLine(b.blue)} · ${b.odds.blue}</div></td>
+        <td>${b.title ? `<span class="gold">★ ${esc(b.title)}</span>` : esc(b.division)}<div class="muted">${b.rounds} rounds</div></td></tr>`;
+      const main = d.bouts.filter((b) => b.order <= mc), pre = d.bouts.filter((b) => b.order > mc);
+      fnEl().innerHTML = `<p class="muted">${esc(d.show.broadcastLine)} Untick the fights you don't want to watch. The card runs from the first prelim to the main event: ticked fights play live, the rest show their result as the night reaches them.</p>
+        <div class="row"><button id="fnWatch">Watch the event (${fn.picks.size} live)</button><button id="fnSim" class="ghost">Simulate the event</button>
+          <span class="muted" style="margin-left:12px">Quick pick:</span><button class="ghost" data-q="all">All</button><button class="ghost" data-q="main">Main card</button><button class="ghost" data-q="me">Main event</button><button class="ghost" data-q="none">None</button>
+          <button class="ghost" id="fnLater" style="margin-left:auto">Not yet</button></div>
+        <table class="fnCard">${main.length ? `<tr class="seg"><td colspan="6">Main card</td></tr>${main.map(row).join("")}` : ""}${pre.length ? `<tr class="seg"><td colspan="6">Prelims</td></tr>${pre.map(row).join("")}` : ""}</table>`;
+      fnEl().querySelectorAll("[data-pick]").forEach((x) => (x.onchange = () => { const id = Number(x.dataset.pick); x.checked ? fn.picks.add(id) : fn.picks.delete(id); renderFnCard(); }));
+      fnEl().querySelectorAll("[data-q]").forEach((x) => (x.onclick = () => {
+        const q = x.dataset.q;
+        fn.picks = new Set(d.bouts.filter((b) => q === "all" || (q === "main" && b.order <= mc) || (q === "me" && b.order === 1)).map((b) => b.bookingId));
+        renderFnCard();
+      }));
+      el("fnWatch").onclick = () => runNight(true);
+      el("fnSim").onclick = () => runNight(false);
+      el("fnLater").onclick = fnClose;
+    }
+    async function runNight(watch) {
+      fnEl().innerHTML = '<p class="muted">The doors are open...</p>';
+      fn.results = await call("runFightNight", fn.data.show.id);
+      if (!fn.results || fn.results.error) { fnEl().innerHTML = `<p class="bad">${esc(fn.results?.error ?? "The show could not run.")}</p>`; return; }
+      if (!watch) fn.picks = new Set();
+      fn.idx = 0;
+      if (!watch) return renderSummary();
+      fnNext();
+    }
+    function logHtml() {
+      return `<div class="fnLog"><h4 class="ptitle" style="margin-top:0">Tonight's results</h4>${fn.log.map((b) => `<div class="it"><div class="seg">${esc(b.slot)}</div>
+        ${esc(b.red.name)} vs ${esc(b.blue.name)}<div>${resultLine(b)}</div></div>`).join("") || '<p class="muted">The first fight is up.</p>'}</div>`;
+    }
+    function stage(inner) { fnEl().innerHTML = `<div class="fnStage"><div class="fnLive">${inner}</div>${logHtml()}</div>`; }
+    // Reveal skipped bouts up to the next one the player picked, then play that one.
+    function fnNext() {
+      clearInterval(fn.timer);
+      const bouts = fn.results.bouts, skipped = [];
+      while (fn.idx < bouts.length && (!fn.picks.has(bouts[fn.idx].bookingId) || bouts[fn.idx].cancelled || !bouts[fn.idx].result.hasLog)) skipped.push(bouts[fn.idx++]);
+      const nextB = bouts[fn.idx];
+      if (!skipped.length) return nextB ? playBout(nextB) : renderSummary();
+      fn.log.push(...skipped);
+      stage(`<h3 style="margin-top:0">${skipped.length === 1 ? "Result" : "Results"} from the fights you skipped</h3>
+        ${skipped.map((b) => `<div class="fnSkipped"><div class="fnSlot" style="text-align:left">${esc(b.slot)}${b.title ? " · " + esc(b.title) : ""}</div>
+          <div><span class="redn" style="color:#ff9a8a">${esc(b.red.name)}</span> vs <span style="color:#8ab8ff">${esc(b.blue.name)}</span></div>
+          <div>${resultLine(b)}</div>${b.weighIns.map((w) => `<div class="muted">${esc(w)}</div>`).join("")}${b.moments.map(micHtml).join("")}</div>`).join("")}
+        <div class="row"><button id="fnGo">${nextB ? `Next fight: ${esc(nextB.red.name)} vs ${esc(nextB.blue.name)}` : "Finish the night"}</button></div>`);
+      el("fnGo").onclick = () => (nextB ? playBout(nextB) : renderSummary());
+    }
+    async function playBout(b) {
+      const pbp = await call("playByPlay", b.result.boutId);
+      stage(`<div class="fnSlot">${esc(b.slot)}${b.title ? " · " + esc(b.title) : ""} · ${b.rounds} rounds</div>
+        <div class="fnTale"><div><div class="nm r">${esc(b.red.name)}</div><div class="muted">${recLine(b.red)} · ${b.odds.red}</div><div class="muted">${esc(b.red.flairLabel)} on the mic</div></div><div class="vs">VS</div>
+          <div><div class="nm b">${esc(b.blue.name)}</div><div class="muted">${recLine(b.blue)} · ${b.odds.blue}</div><div class="muted">${esc(b.blue.flairLabel)} on the mic</div></div></div>
+        ${b.weighIns.map((w) => `<div class="muted" style="text-align:center">${esc(w)}</div>`).join("")}
+        <div class="row" style="justify-content:center"><button class="ghost" id="fnSpeed">${fn.speed > 200 ? "Faster" : "Slower"}</button><button class="ghost" id="fnEnd">Skip to the result</button></div>
+        <div id="fnPbp"></div><div id="fnAfter"></div>`);
+      const lines = pbp?.lines ?? [];
+      let i = 0;
+      const draw = () => {
+        let r = 0;
+        el("fnPbp").innerHTML = lines.slice(0, i).map((l) => `${l.round !== r ? `<div class="round">Round ${(r = l.round)}</div>` : ""}<div class="${l.big ? "big" : ""}">${esc(l.clock)} ${esc(l.text)}</div>`).join("");
+        el("fnPbp").scrollTop = el("fnPbp").scrollHeight;
+      };
+      const finish = () => {
+        clearInterval(fn.timer); i = lines.length; draw();
+        fn.idx++; fn.log.push(b);
+        el("fnEnd").disabled = el("fnSpeed").disabled = true;
+        const more = fn.idx < fn.results.bouts.length;
+        el("fnAfter").innerHTML = `<div class="fnResult">${b.result.winner === "draw" ? '<div class="big">It\'s a draw</div>' : `<div class="big">${esc(b.result.winnerName)} wins</div>`}<div>${resultLine(b).replace(/^<b>[^<]*<\/b> by/, "by")}</div></div>
+          ${b.moments.length ? `<h4 class="ptitle">On the mic</h4>${b.moments.map(micHtml).join("")}` : '<p class="muted">Both fighters leave the cage without taking the mic.</p>'}
+          <div class="row"><button id="fnGo">${more ? "Next fight" : "Finish the night"}</button></div>`;
+        el("fnGo").onclick = () => (more ? fnNext() : renderSummary());
+        document.querySelector("#fn .fnLog").outerHTML = logHtml();
+        el("fnAfter").scrollIntoView({ block: "nearest" });
+      };
+      const tick = () => { i++; draw(); if (i >= lines.length) finish(); };
+      const start = () => { clearInterval(fn.timer); fn.timer = setInterval(tick, fn.speed); };
+      el("fnSpeed").onclick = () => { fn.speed = fn.speed > 200 ? 120 : 450; el("fnSpeed").textContent = fn.speed > 200 ? "Faster" : "Slower"; start(); };
+      el("fnEnd").onclick = finish;
+      if (!lines.length) finish(); else start();
+    }
+    function renderSummary() {
+      clearInterval(fn.timer);
+      const r = fn.results, s = r.summary;
+      const fotn = r.bouts.find((b) => b.result?.fotn);
+      const money = (n) => n === null || n === undefined ? "–" : usd(n);
+      fnEl().innerHTML = `<h3 style="margin-top:0">${esc(r.show.name)} is in the books</h3>
+        <div class="row"><span class="pill">Card rating ${s.rating === null ? "–" : Math.round(s.rating)}</span><span class="pill">Attendance ${(s.attendance ?? 0).toLocaleString("en-US")}</span>
+          <span class="pill">Gate ${money(s.gate)}</span>${s.ppv_buys ? `<span class="pill">PPV buys ${s.ppv_buys.toLocaleString("en-US")}</span>` : ""}${s.tv_viewers ? `<span class="pill">TV viewers ${s.tv_viewers.toLocaleString("en-US")}</span>` : ""}
+          <span class="pill ${s.profit >= 0 ? "good" : "bad"}">Profit ${money(s.profit)}</span></div>
+        ${fotn ? `<p>Fight of the Night: <b>${esc(fotn.red.name)} vs ${esc(fotn.blue.name)}</b></p>` : ""}
+        <table class="fnCard fnSum">${[...r.bouts].reverse().map((b) => `<tr><td class="muted" style="width:110px">${esc(b.slot)}</td><td>${esc(b.red.name)} vs ${esc(b.blue.name)}<div>${resultLine(b)}</div>
+          ${b.weighIns.map((w) => `<div class="muted">${esc(w)}</div>`).join("")}${b.moments.map(micHtml).join("")}</td></tr>`).join("")}</table>
+        <div class="row"><button id="fnDone">Back to the office</button></div>`;
+      el("fnDone").onclick = async () => { fnClose(); fn.shownFor = null; await refreshAll(); document.querySelector('nav button[data-tab="home"]').click(); };
+    }
+
+    async function refreshAll() { await refreshHeader(); await refreshBooking(); }
+    refreshAll().then(() => {
+      // Deep links: #book, #view, #world, or #book:<eventId>
+      const [tab, id] = location.hash.slice(1).split(":");
+      if (id && tab === "book") { eventId = Number(id); refreshBooking(); }
+      if (tab) document.querySelector(`nav button[data-tab="${tab}"]`)?.click();
+      if (id && tab === "ranks") showProfile(Number(id));
+    });
+  </script>
+</body>
+</html>

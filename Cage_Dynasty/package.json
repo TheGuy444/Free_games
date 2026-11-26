@@ -1,0 +1,37 @@
+{
+  "name": "cage-dynasty",
+  "version": "0.0.1",
+  "private": true,
+  "license": "Unlicense",
+  "description": "Original MMA promotion management sim",
+  "type": "module",
+  "main": "dist/app/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-static.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "sim": "tsx src/cli/sim.ts",
+    "app": "npm run build && electron .",
+    "rebuild:electron": "npx @electron/rebuild -f -w better-sqlite3",
+    "rebuild:node": "npm rebuild better-sqlite3",
+    "fight": "tsx src/cli/fight.ts",
+    "play": "tsx src/cli/play.ts",
+    "web": "tsx src/app/server.ts",
+    "calibrate": "tsx src/cli/calibrate.ts",
+    "stress": "tsx src/cli/stress.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.2.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.8",
+    "electron": "^45.5.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
