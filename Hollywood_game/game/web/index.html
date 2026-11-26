@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hollywood Tycoon</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' content='🎬'/>">
+</head>
+<body>
+<div id="boot" class="boot">
+  <div class="boot-inner">
+    <div class="reel"></div>
+    <div class="boot-title">HOLLYWOOD TYCOON</div>
+    <div class="boot-sub">loading the studio…</div>
+  </div>
+</div>
+
+<header id="topbar" class="topbar hidden">
+  <div class="brand">
+    <div class="brand-mark">HT</div>
+    <div>
+      <div id="studio-name" class="studio-name">—</div>
+      <div id="era-line" class="era-line">—</div>
+    </div>
+  </div>
+
+  <div class="statbar">
+    <div class="stat"><span class="k">Date</span><span class="v" id="s-date">—</span></div>
+    <div class="stat"><span class="k">Cash</span><span class="v" id="s-cash">—</span></div>
+    <div class="stat"><span class="k">Valuation</span><span class="v" id="s-val">—</span></div>
+    <div class="stat"><span class="k">Prestige</span><span class="v" id="s-prestige">—</span></div>
+    <div class="stat"><span class="k">Rep</span><span class="v" id="s-rep">—</span></div>
+    <div class="stat"><span class="k">Pictures</span><span class="v" id="s-films">—</span></div>
+  </div>
+
+  <div class="clockbox">
+    <button id="btn-pause" class="clk" title="Pause the calendar">❚❚</button>
+    <button id="btn-play" class="clk" title="Let time run">▶</button>
+    <div class="speeds">
+      <button class="sp" data-w="4">+4w</button>
+      <button class="sp" data-w="13">+Q</button>
+      <button class="sp" data-w="52">+1y</button>
+      <button class="sp danger" data-w="260">+5y</button>
+    </div>
+    <div id="clock-dot" class="clock-dot"></div>
+    <button id="btn-menu" class="clk" title="Studio menu">☰</button>
+  </div>
+</header>
+
+<nav id="tabs" class="tabs hidden"></nav>
+
+<main id="main" class="main hidden">
+  <section id="view" class="view"></section>
+  <aside id="side" class="side">
+    <div class="side-block">
+      <div class="side-h">Needs your desk</div>
+      <div id="need" class="need"></div>
+    </div>
+    <div class="side-block">
+      <div class="side-h">Tinsel ticker</div>
+      <div id="ticker" class="ticker"></div>
+    </div>
+  </aside>
+</main>
+
+<div id="modal" class="modal hidden"><div class="modal-card"><div id="modal-body"></div></div></div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+<script src="views.js"></script>
+<script src="views_b.js"></script>
+<script src="views_c.js"></script>
+</body>
+</html>

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Ronin’s Road</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: atmospheric, terse, a wandering swordsman's travel diary
+   IDEA: a woodblock road map of the realm (Tōkaidō prints) that you walk across
+   PICTURE: the inked map of central Honshu is the play surface; duels get a sun-and-silhouette scene
+   COLOUR and TYPE: washi grey ground, sumi ink, vermilion seal accent, indigo for water and roads; Shippori Mincho titles, Zen Kaku Gothic body
+   LAYOUT: map large on the left, ronin status and current town on the right; stacks status, map, town, journal on phones */
+:root{color-scheme:light dark;
+--bg:light-dark(#e6e3dc,#11110f);--paper:light-dark(#f8f6f1,#1b1a17);--ink:light-dark(#1b1915,#ece7db);
+--mute:light-dark(#615b51,#a39d90);--line:light-dark(#cfc9bc,#38352e);--shu:light-dark(#c0301a,#ec5b40);
+--ai:light-dark(#2a4a7c,#8eabdc);--sea:light-dark(#ccd5e0,#121a27);--land:light-dark(#f6f3ec,#211f1a);
+--hill:light-dark(#d6d0c3,#2e2b25);--coast:light-dark(#8c8576,#59544a);--wash:light-dark(#edf0f5,#161c28)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Zen Kaku Gothic New",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3,h4{font-family:"Shippori Mincho B1",serif;line-height:1.1;margin:0;text-wrap:balance}
+.top{background:#17150f;color:#efe9dc;padding:16px max(4vw,16px);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.hanko{background:#c0301a;color:#fff;font:800 20px/1 "Shippori Mincho B1",serif;writing-mode:vertical-rl;padding:8px 6px;border-radius:4px;letter-spacing:2px}
+.top h1{font-size:clamp(26px,3.4vw,36px)}.top p{margin:2px 0 0;color:#b9b2a3;font-size:14px}
+.hdr{display:flex;gap:8px}.hdr button{background:transparent;color:#efe9dc;border-color:#4a463d}
+.wrap{display:flex;gap:16px;padding:16px max(2vw,12px) 40px;max-width:1380px;margin:0 auto;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:16px}.c1{flex:1.65}.c2{flex:1}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:16px}
+.mapcard{padding:0;overflow:hidden}.map{overflow-x:auto}.map svg{display:block;width:100%;min-width:640px;height:auto}
+.legend{margin:0;padding:10px 16px;font-size:13px;color:var(--mute);border-top:1px solid var(--line)}
+.legend b{color:var(--shu);font-family:"Shippori Mincho B1",serif}
+button{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:4px;min-height:44px;padding:8px 12px;cursor:pointer;text-align:left;line-height:1.3}
+button small{display:block;font-size:13px;color:var(--mute);margin-top:2px}
+button:hover:not(:disabled){border-color:var(--ink)}button:focus-visible,.node.go:focus-visible{outline:3px solid var(--ai);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}button.primary small{color:inherit;opacity:.75}
+button.warn{border-color:var(--shu)}button.mini{min-height:34px;padding:4px 10px;font-size:14px}
+button.ghost{background:transparent}
+.who{display:flex;gap:12px;align-items:center}.who h2{font-size:26px}.who p{margin:2px 0 0;color:var(--mute);font-size:14px}
+.seal{flex:none;width:46px;height:46px;border-radius:50%;background:var(--shu);color:#fff;display:grid;place-items:center;font:800 22px "Shippori Mincho B1",serif}
+.vit{margin:14px 0 10px}.vrow{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.hp{height:10px;background:var(--line);border-radius:5px;position:relative}
+.hp i{display:block;height:100%;background:var(--ink);border-radius:5px;transition:width .35s}
+.hp.low i,.hp.red i{background:var(--shu)}.hp b{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ai)}
+.res{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 12px}
+.res div{background:var(--bg);border-radius:4px;padding:6px 8px}.res dt{font-size:13px;color:var(--mute)}.res dd{margin:0;font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+.stats{display:grid;gap:4px}.st{display:grid;grid-template-columns:6.5em 1fr 1.6em;align-items:center;gap:8px;font-size:14px}.st b{text-align:right}
+.pp{display:flex;gap:3px}.pp i{flex:1;height:6px;border-radius:2px;background:var(--line)}.pp i.on{background:var(--ink)}
+.gear{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--mute);margin:12px 0}
+.gear span{display:flex;gap:8px;align-items:center}
+.mrow{display:flex;flex-wrap:wrap;gap:6px}.ms{font:800 18px "Shippori Mincho B1",serif;color:var(--mute);border:1px dashed var(--line);border-radius:4px;padding:4px 6px;text-align:center;min-width:56px}
+.ms small{display:block;font:500 11px "Zen Kaku Gothic New",sans-serif;margin-top:2px}.ms.won{color:var(--shu);border:1px solid var(--shu)}.ms.nem{color:var(--ink)}
+.date{font-size:13px;color:var(--mute);margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.ph{display:flex;gap:12px;align-items:center}.pk{font:800 30px/1 "Shippori Mincho B1",serif;color:var(--shu);writing-mode:vertical-rl}
+.ph h2{font-size:32px}.pt{margin:2px 0 0;color:var(--mute);font-size:14px}.pd{margin:10px 0}
+.job{background:var(--wash);border-left:3px solid var(--ai);padding:8px 12px;font-size:14px;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.master,.boss{display:flex;gap:12px;border:1px solid var(--shu);border-radius:6px;padding:12px;margin:12px 0}
+.master p,.boss p{margin:0 0 10px}.master.done{border-color:var(--line)}.master.done p{margin:0}
+.mk1{flex:none;font:800 28px/1 "Shippori Mincho B1",serif;color:var(--shu)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 10px}
+.tab{min-height:38px;padding:6px 12px;border-radius:20px}.tab.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.svc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.svc>p,.svc>h4,.svc>.offer{grid-column:1/-1;margin:4px 0 0}
+.svc h4{font-size:17px;margin-top:8px}.small{font-size:13px;color:var(--mute)}
+.offer{display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;font-size:14px}.offer p{margin:0}.offer button{flex:none}
+.roads-h{font-size:18px;margin:16px 0 8px}.roads{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.journal{list-style:none;margin:8px 0 0;padding:0;font-size:14px;max-height:260px;overflow:auto}
+.journal li{display:flex;gap:10px;padding:5px 0;border-top:1px solid var(--line)}.journal span{flex:none;color:var(--mute);width:3.6em;font-variant-numeric:tabular-nums}
+/* map */
+.sea{fill:var(--sea)}.wv{fill:none;stroke:var(--ai);opacity:.18;stroke-width:1.2}
+.land{fill:var(--land);stroke:var(--coast);stroke-width:1.6}
+.lake{fill:var(--sea);stroke:var(--coast);stroke-width:1}
+.mtns path{fill:none;stroke:var(--coast);stroke-width:1.4;opacity:.7}.fuji{fill:var(--hill);stroke:var(--coast)}.snow{fill:var(--paper)}
+.road{stroke:var(--coast);stroke-width:2.5;opacity:.8}.road.mtn{stroke-dasharray:7 5}.road.act{stroke:var(--shu);stroke-width:3.5;opacity:1}
+.dl circle{fill:var(--land);stroke:var(--coast);stroke-width:1}.dl text{font:700 12px "Zen Kaku Gothic New",system-ui,sans-serif;text-anchor:middle;fill:var(--mute)}
+.dl.act circle{stroke:var(--shu)}.dl.act text{fill:var(--shu)}
+.nd{fill:var(--paper);stroke:var(--ink);stroke-width:2}.nd.big{stroke-width:3.2}
+.here{fill:var(--shu)}.hk{fill:#fff;font:800 14px "Shippori Mincho B1";text-anchor:middle}
+.nl{font:600 17px "Zen Kaku Gothic New",system-ui,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:5px;stroke-linejoin:round}.nl.cur{font-weight:700;fill:var(--shu)}
+.node.go{cursor:pointer;outline:none}.hit{fill:transparent}.node.go:hover .nd,.node.go:focus .nd{fill:var(--shu)}
+.ring{fill:none;stroke:var(--shu);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:pulse 1.8s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.35);opacity:0}}
+.mk{font:800 16px "Shippori Mincho B1";fill:var(--shu);text-anchor:middle;paint-order:stroke;stroke:var(--land);stroke-width:4px}
+.mk.w{fill:var(--mute)}.mk.job{fill:var(--ai);text-anchor:start}.mk.nem{fill:var(--ink);font-size:20px}
+.cart{font:800 30px "Shippori Mincho B1";fill:var(--ink);opacity:.8}.cart2{font:500 14px "Zen Kaku Gothic New",system-ui,sans-serif;fill:var(--mute)}
+/* modal */
+.modal{position:fixed;inset:0;background:rgb(12 10 8/.6);display:grid;place-items:center;padding:12px;z-index:10}
+.modal[hidden]{display:none}
+.mbox{background:var(--paper);width:100%;max-width:620px;max-height:calc(100dvh - 24px);overflow:auto;border-radius:6px;padding:clamp(16px,3vw,28px);border-top:6px solid var(--shu)}
+.mbox.wide{max-width:800px}
+.mbox h2{font-size:clamp(26px,3.5vw,34px);margin-bottom:6px}.evk{font:800 44px/1 "Shippori Mincho B1",serif;color:var(--shu);margin-bottom:8px}
+.evt{font-size:17px}.choices{display:grid;gap:8px;margin-top:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:14px;padding:3px 10px;border-radius:12px;background:var(--bg);white-space:nowrap}.chip.up{color:var(--ai);font-weight:700}.chip.dn{color:var(--shu);font-weight:700}
+.fld{display:grid;gap:4px;margin:12px 0;font-size:14px;color:var(--mute)}
+.fld input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;min-height:44px;padding:8px 12px}
+.bgs{display:grid;gap:8px}.bgs button.on{border:2px solid var(--shu)}.bgs em{font-style:normal;color:var(--ink)}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:14px 0 0;font-size:14px}.chk input{width:20px;height:20px;margin-top:2px;accent-color:#c0301a}
+/* duel */
+.dtop{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-bottom:6px;gap:8px}
+.scene{display:block;width:100%;height:auto;max-height:200px;margin:0 0 10px}
+.sun{fill:var(--shu);opacity:.92}.hills{fill:var(--hill)}.ground{fill:var(--ink)}
+.fig path,.fig circle{fill:var(--ink)}.fig .blade{stroke:var(--ink);stroke-width:3.5;stroke-linecap:round}.fig .sash{fill:var(--shu)}
+.slash{fill:none;stroke:var(--paper);stroke-width:6;stroke-linecap:round;stroke-dasharray:140;stroke-dashoffset:140;animation:sl .4s ease-out forwards}
+.slash.r{stroke:var(--shu)}
+@keyframes sl{to{stroke-dashoffset:0}}
+.fighters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.fn b{display:block;font-family:"Shippori Mincho B1",serif;font-size:19px}.fn span{font-size:13px;color:var(--mute)}
+.fs{display:flex;justify-content:space-between;font-size:13px;margin-top:4px;font-variant-numeric:tabular-nums;gap:6px;flex-wrap:wrap}
+.pips{display:inline-flex;gap:3px;vertical-align:middle}.pips i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--ai)}.pips i.on{background:var(--ai)}
+.read{background:var(--wash);border-left:3px solid var(--ai);padding:10px 14px;margin:14px 0}
+.read p{margin:4px 0 0;font-size:17px;font-family:"Shippori Mincho B1",serif}
+.q{font-size:13px;font-weight:700}.qClear{color:var(--ai)}.qFair{color:var(--ink)}.qUncertain,.qClouded{color:var(--shu)}
+.acts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.act kbd{font:700 12px "Zen Kaku Gothic New";border:1px solid var(--line);border-radius:3px;padding:0 5px;margin-right:6px;color:var(--mute)}
+.dlog{list-style:none;padding:0;margin:12px 0 0;font-size:14px}.dlog li{padding:6px 0;border-top:1px solid var(--line)}.dlog li:first-child{font-size:15px}
+.ac{font-weight:700;margin-right:4px}.dmF{color:var(--ai);font-style:normal;font-weight:700;white-space:nowrap}.dmP{color:var(--shu);font-style:normal;font-weight:700;white-space:nowrap}
+.dfoot{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}.hint{font-size:13px;color:var(--mute);flex:1}
+.assess{font-weight:700;font-size:17px;margin:8px 0 2px}
+.iaibtn{width:100%;min-height:220px;display:grid;place-items:center;text-align:center;font:800 96px/1 "Shippori Mincho B1",serif;color:var(--mute);margin-top:10px;touch-action:manipulation;user-select:none}
+.iaibtn small{font:500 14px "Zen Kaku Gothic New",sans-serif}.iaibtn.go{background:var(--shu);color:#fff;border-color:var(--shu)}.iaibtn.go small{color:#fff}
+@media(max-width:900px){.wrap{flex-direction:column;align-items:stretch}.col{display:contents}#status{order:1}.mapcard{order:2}#place{order:3}.jcard{order:4}}
+@media(max-width:600px){.acts{grid-template-columns:repeat(2,minmax(0,1fr))}.acts button:last-child{grid-column:1/-1}.svc{grid-template-columns:minmax(0,1fr)}.res dd{font-size:16px}.top p{display:none}}
+@media(prefers-reduced-motion:reduce){.ring{animation:none;opacity:.6}.slash{animation:none;stroke-dashoffset:0}.hp i{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="hanko">浪人</span><div><h1>The Ronin’s Road</h1><p>Wander the realm in 1603. Duel, survive, and hunt the man who killed your master.</p></div></div>
+  <div class="hdr"><button id="howBtn" type="button">How duels work</button><button id="newBtn" type="button">New life</button></div>
+</header>
+<main class="wrap">
+  <div class="col c1">
+    <section class="card mapcard"><div id="map" class="map"></div>
+      <p class="legend">Click a pulsing town to walk there. Numbers are days on foot; dashed roads cross mountains and slow in winter. <b>師</b> a master awaits · <b>勝</b> defeated · <b>依</b> your commission.</p></section>
+    <section class="card jcard"><h3>Journal</h3><ol id="journal" class="journal"></ol></section>
+  </div>
+  <div class="col c2">
+    <section class="card" id="status"></section>
+    <section class="card" id="place"></section>
+  </div>
+</main>
+<div id="modal" class="modal" hidden><div id="mbox" class="mbox" role="dialog" aria-modal="true"></div></div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CB={};let cbn=0;
+const B=(label,fn,o={})=>{const id='c'+(++cbn);CB[id]=fn;return `<button type="button" class="${o.cls||''}" data-cb="${id}" ${o.dis?'disabled':''}>${label}${o.sub?`<small>${o.sub}</small>`:''}</button>`};
+
+/* ---------- world ---------- */
+const LOC={
+himeji:{n:'Himeji',k:'姫路',x:70,y:430,a:'s',t:'Castle town',sv:['inn','market','smith','dojo'],tier:3,d:'The white heron castle looms over a town of retainers and merchants.'},
+osaka:{n:'Ōsaka',k:'大坂',x:185,y:455,a:'w',t:'Merchant city',sv:['inn','market','smith','dojo','dice'],tier:2,d:'Rice brokers, gamblers and the ghosts of the Toyotomi. Money moves fast here.'},
+nara:{n:'Nara',k:'奈良',x:240,y:478,a:'s',t:'Temple town',sv:['inn','market','temple'],tier:1,d:'Ancient halls and tame deer. The great bronze Buddha watches all.'},
+kyoto:{n:'Kyōto',k:'京都',x:228,y:398,a:'w',t:'Imperial capital',sv:['inn','market','smith','dojo','shrine'],tier:4,d:'Silk, intrigue, and the proudest sword schools in the land.'},
+kurama:{n:'Mount Kurama',k:'鞍馬',x:252,y:345,a:'w',t:'Mountain temple',sv:['temple'],tier:3,d:'Cedar forest where, they say, tengu once taught the sword to a boy-general.'},
+iga:{n:'Iga',k:'伊賀',x:305,y:445,a:'e',t:'Hidden village',sv:['inn','market'],tier:3,d:'Terraced fields, closed doors, and eyes behind every shutter.'},
+ise:{n:'Ise',k:'伊勢',x:372,y:495,a:'s',t:'Shrine town',sv:['inn','market','shrine'],tier:1,d:'Pilgrims crowd the road to the Grand Shrine of the Sun Goddess.'},
+seki:{n:'Sekigahara',k:'関ヶ原',x:335,y:322,a:'e',t:'Old battlefield',sv:['camp'],tier:4,d:'Grass grows over the field where the realm was decided three years ago. Crows still circle.'},
+nagoya:{n:'Nagoya',k:'名古屋',x:410,y:372,a:'e',t:'Castle town',sv:['inn','market','smith','dojo'],tier:2,d:'A new castle rises, and there is plenty of work for a sword.'},
+kanazawa:{n:'Kanazawa',k:'金沢',x:378,y:112,a:'e',t:'Castle town',sv:['inn','market','smith','dojo'],tier:3,d:'The rich Maeda domain on the snowy coast. Its smiths are famed.'},
+kiso:{n:'Kiso Valley',k:'木曽',x:525,y:235,a:'e',t:'Post village',sv:['inn','market'],tier:2,d:'Wooden post towns strung along a deep, forested gorge.'},
+matsumoto:{n:'Matsumoto',k:'松本',x:570,y:150,a:'e',t:'Castle town',sv:['inn','market','dojo'],tier:2,d:'A black crow castle beneath the high Alps.'},
+kofu:{n:'Kōfu',k:'甲府',x:660,y:262,a:'n',t:'Valley town',sv:['inn','market','shrine'],tier:2,d:'Old Takeda country. Farmers still speak of the Tiger of Kai.'},
+sunpu:{n:'Sunpu',k:'駿府',x:640,y:398,a:'s',t:'Castle town',sv:['inn','market','dojo'],tier:3,d:'Where the old lord keeps his court. Guards are everywhere.'},
+hakone:{n:'Hakone',k:'箱根',x:738,y:352,a:'s',t:'Mountain barrier',sv:['inn','onsen'],tier:2,d:'Steep cedar road, a guarded barrier, and hot springs for the weary.'},
+kamakura:{n:'Kamakura',k:'鎌倉',x:812,y:338,a:'s',t:'Temple town',sv:['inn','temple'],tier:1,d:'The old warrior capital, quiet now, its great Buddha open to the sky.'},
+edo:{n:'Edo',k:'江戸',x:850,y:262,a:'e',t:'Shogun’s capital',sv:['inn','market','smith','dojo'],tier:5,d:'A city rising from the marsh. Every ambitious sword in the land comes here.'}
+};
+const ROADS=[['himeji','osaka',2],['osaka','nara',1],['osaka','kyoto',1],['kyoto','nara',1],['kyoto','kurama',1],['kyoto','iga',2],['nara','iga',1],['iga','ise',2],['ise','nagoya',2],['kyoto','seki',2],['seki','nagoya',1],['seki','kanazawa',3,1],['kanazawa','matsumoto',4,1],['nagoya','kiso',3,1],['kiso','matsumoto',2,1],['matsumoto','kofu',2],['nagoya','sunpu',3],['sunpu','hakone',2],['kofu','edo',3,1],['hakone','edo',2,1],['hakone','kamakura',2],['kamakura','edo',1]];
+const LAND='M0,262 C60,250 140,236 205,248 C240,240 268,226 300,206 C322,176 338,132 352,92 C362,62 372,30 392,0 L1000,0 L1000,232 C980,250 958,268 944,292 C936,330 934,368 904,388 C884,392 874,368 876,336 C872,312 864,296 852,292 C842,300 836,326 830,350 C812,362 790,366 770,370 C752,378 744,396 738,430 C732,452 716,458 708,440 C702,418 700,398 690,388 C676,402 662,414 640,420 C600,428 560,440 520,436 C480,432 446,420 424,402 C410,410 402,424 396,440 C392,470 404,492 408,510 C392,532 360,556 330,590 C300,612 264,620 236,612 C214,580 206,540 196,500 C190,486 180,478 160,474 C120,466 80,460 40,458 L0,458 Z';
+const MASTERS={
+kurama:{n:'Sōjō',ti:'the Hermit of Kurama',g:'m',fame:12,ken:5,iai:5,ins:8,dec:8,spi:8,vit:115,style:'patient',blade:2,armor:0,tech:'Tengu Eyes',td:'+2 Insight, and tells read truer',gift:{ins:2},key:'tengu',intro:'An old monk with a bamboo broom watches you climb the last of the steps. “You want to learn to see,” he says. “First, you must be seen.”'},
+kyoto:{n:'Yoshida Denzō',ti:'head of the Shijō school',g:'m',fame:25,ken:7,iai:6,ins:6,dec:5,spi:6,vit:130,style:'aggressive',blade:3,armor:1,tech:'Shijō Cut',td:'+1 Kenjutsu, and strikes cut 25% deeper',gift:{ken:1},key:'shijo',intro:'Forty students line the dojo walls in silence. Denzō rises, smiling like a man who has never lost in his own house.'},
+himeji:{n:'Sakai Tomoe',ti:'sword instructor of Himeji Castle',g:'f',fame:35,ken:7,iai:7,ins:7,dec:6,spi:8,vit:135,style:'defensive',blade:3,armor:1,tech:'Flowing Water',td:'+1 Spirit, and parry counters land 40% harder',gift:{spi:1},key:'water',intro:'In the castle courtyard, Tomoe ties back her sleeves. “Most men lose to me before they swing,” she says. “They lose to their own impatience.”'},
+iga:{n:'Momochi',ti:'the Shadow of Iga',g:'m',fame:45,ken:7,iai:8,ins:8,dec:10,spi:7,vit:130,style:'trickster',blade:3,armor:0,tech:'Shadow Step',td:'+1 Iai, and feints land 40% harder',gift:{iai:1},key:'shadow',intro:'No one in Iga admits Momochi exists. Then, in an empty rice field at dusk, a stooped farmer straightens up and draws a short, straight blade.'},
+edo:{n:'Hōjō Masanori',ti:'fencing master to the Shogunate',g:'m',fame:60,honor:15,ken:9,iai:9,ins:8,dec:7,spi:8,vit:155,style:'balanced',blade:4,armor:1,tech:'Lightning Draw',td:'+1 Iai and Kenjutsu, and your quick-draw cuts 50% harder',gift:{iai:1,ken:1},key:'lightning',intro:'The Shogunate’s master receives you on a polished floor beneath the Tokugawa crest. “Ronin come to me every week,” he says. “I remember none of them.”'}
+};
+const NEMESIS={n:'Akagi Kagemaru',ti:'the Crimson Ronin',g:'m',ken:9,iai:9,ins:9,dec:9,spi:9,vit:175,style:'aggressive',blade:4,armor:1,tier:8,nemesis:true};
+const BLADES=['Notched blade','Serviceable katana','Fine katana','Masterwork katana','Blade of Masamune’s line'],BCOST=[0,35,90,200,420];
+const ARMORS=['Travelling kimono','Padded haori','Chain-mail vest'],ACOST=[0,50,140];
+const BGS=[
+{n:'Fallen retainer',d:'Your clan died on the losing side at Sekigahara. You kept your sword and your manners.',ken:5,iai:4,ins:3,spi:3,honor:10,koku:25,blade:1,armor:1,vb:96,rations:4},
+{n:'Temple foundling',d:'Raised by monks, trained by Ittetsu. Sharp eyes, a steady breath, an empty purse.',ken:3,iai:4,ins:5,spi:5,honor:15,koku:10,blade:0,armor:0,vb:90,rations:5},
+{n:'Farmer with a stolen sword',d:'You took a dead man’s blade from the field and never looked back. Quick hands, no name.',ken:4,iai:5,ins:4,spi:3,honor:-10,koku:15,blade:1,armor:0,vb:104,rations:6}
+];
+const SN={ken:'Kenjutsu',iai:'Iai',ins:'Insight',spi:'Spirit'};
+const FXN={koku:'koku',honor:'honour',fame:'fame',vit:'vitality',rations:'rations',ken:'Kenjutsu',iai:'Iai',ins:'Insight',spi:'Spirit',salve:'salve'};
+const SEASONS=['Spring','Summer','Autumn','Winter'];
+const STYLES={aggressive:{strike:44,parry:16,feint:24,focus:16},defensive:{strike:20,parry:46,feint:14,focus:20},trickster:{strike:22,parry:18,feint:44,focus:16},patient:{strike:20,parry:32,feint:14,focus:34},balanced:{strike:30,parry:28,feint:24,focus:18}};
+const STYLED={aggressive:'presses the attack',defensive:'waits behind a strong guard',trickster:'fights with feints and lies',patient:'gathers ki and strikes late',balanced:'shows no obvious habit'};
+const COUNTER={strike:'parry',parry:'feint',feint:'strike',focus:'strike',decisive:'parry'};
+const NAMES={strike:'Strike',parry:'Parry',feint:'Feint',focus:'Focus',decisive:'Decisive cut'};
+const TELLS={
+strike:['{His} grip tightens; {his} shoulders rise.','{He} shifts {his} weight onto the front foot.','The tip of {his} blade lifts, hungry.'],
+parry:['{He} sinks into a low, patient guard.','{His} blade settles across {his} centre, unmoving.','{He} waits, eyes fixed on your hands.'],
+feint:['{His} eyes flick to your left side.','A small, sly shift of {his} hips.','{He} half-steps, then hesitates — a little too neatly.'],
+focus:['{He} breathes slowly, steadying {him}self.','{His} eyes go distant for a heartbeat.','{He} lowers the blade a fraction and exhales.'],
+decisive:['A terrible stillness falls over {him}.','The air seems to bend toward {his} blade.','{He} raises the sword high, all of {him}self behind it.']
+};
+const RULES={
+'strike|parry':{b:.9,bk:1,pA:'Your cut is turned aside — {F} answers with a counter-cut.',fA:'You turn {F}’s cut aside and answer with a counter-cut.'},
+'strike|feint':{a:1,pA:'{F} feints, and you cut straight into the opening.',fA:'Your feint invites nothing — {F} cuts straight through it.'},
+'strike|focus':{a:1.3,pA:'{F} gathers breath; you punish the stillness.',fA:'You close your eyes to gather ki, and {F}’s blade finds you.'},
+'parry|feint':{b:1,pA:'You guard against a cut that never comes. {F}’s real blow lands low.',fA:'{F} guards against your feint; your true cut slips beneath it.'},
+'parry|focus':{bk:2,pA:'You hold your guard while {F} gathers ki.',fA:'{F} holds guard while you gather ki.'},
+'feint|focus':{a:.6,bk:1,pA:'Your feint nicks {F}, who is lost in focus.',fA:'{F}’s feint grazes you as you gather ki.'},
+'decisive|strike':{a:1.8,pA:'Your decisive cut overwhelms {F}’s attack.',fA:'{F}’s decisive cut overwhelms your attack.'},
+'decisive|feint':{a:1.8,pA:'{F}’s feint is swept away by your decisive cut.',fA:'Your feint is swept away by {F}’s decisive cut.'},
+'decisive|focus':{a:2,pA:'You strike {F} mid-breath with everything you have.',fA:'{F} strikes you mid-breath with everything.'},
+'parry|parry':{ak:1,bk:1,pA:'Both settle into guard. Spirits sharpen.'},
+'feint|feint':{pA:'Two feints, two readers. Neither is fooled.'},
+'focus|focus':{ak:2,bk:2,pA:'Both warriors breathe. The air between you thickens.'}
+};
+const SUR=['Ōtsuki','Kanō','Sasaki','Mori','Hattori','Kuroda','Ishida','Ikeda','Hayashi','Nagai','Okabe','Tsuda','Miura','Shimada','Arai','Kobayashi'];
+const GIVM=['Gonbei','Saburō','Kanbei','Heihachi','Tōta','Genzaemon','Kyūzō','Matahachi','Denshichi','Ukyō','Hyōgo','Rikimaru','Kojūrō','Ginji','Tetsunosuke'];
+const GIVF=['Chiyo','Okuni','Tsuru','Kaede','Ayame','Shino'];
+const BANDITS=['Onikiri the Demon-Cutter','One-eyed Sakon','Kumagorō the Bear','Hachi of the Hatchet','Red Gonta','Jinbei Nine-Fingers','Ryōkai the Mad Monk','Tatsu the Snake'];
+const CLANS=['Ikeda','Kuroda','Maeda','Date','Mōri','Hosokawa','Tōdō','Ii'];
+const QUIET=[['Cherry petals drift across a quiet road.','Farmers flood the paddies; frogs sing all night.'],['Cicadas scream in the cedars. The road is empty and hot.','A sudden shower, then steam rising off the road.'],['Maples burn red along the road. No one troubles you.','Persimmons hang over a sleeping village.'],['Snow muffles every footstep. You walk alone.','Your breath smokes in the still air. The road is empty.']];
+const RUMOURS=['The smiths of Kanazawa sell blades cheaper than anyone in the land.','The hot springs at Hakone close even deep wounds.','Show respect on Mount Kurama and you come down sharper than you went up.','In Iga every farmer is a shinobi. Do not trust a kind face there.','Pray at the Grand Shrine of Ise and the Sun Goddess mends body and spirit.','Winter snow adds a day to every mountain road.','Dojo heads pay well to keep a stormer quiet — if the stormer wins.','The masters watch your habits. Repeat yourself and they will have you.','Rice is dear in Ōsaka. Carry your own if you head into the Kiso.','A tired swordsman is a dead one. Sleep at inns, not in ditches.'];
+
+/* ---------- state ---------- */
+const KEY='ronin-road-v1';let S=null,D=null,NEXT=null;const UI={view:null,dice:''};
+const season=()=>Math.floor(((S.day-1)%360)/90);
+const dateStr=()=>`${SEASONS[season()]} ${1603+Math.floor((S.day-1)/360)}, day ${S.day}`;
+const mcount=()=>Object.keys(S.masters).length;
+const has=k=>S.tech.includes(k);
+const PS=()=>({ken:S.ken,iai:S.iai+(S.armor>=2?-1:0),ins:S.ins,spi:S.spi,blade:S.blade,armor:S.armor});
+const kiMax=x=>3+Math.floor(x.spi/3);
+const ftier=()=>clamp(1+Math.floor(S.fame/14),1,7);
+const pc=(k,dc)=>clamp(Math.round((.5+(S[k]-dc)*.1)*100),5,95);
+const roll=(k,dc)=>Math.random()*100<pc(k,dc);
+const P=(f,s)=>{const w=f.g==='f';return s.replace(/\{He\}/g,w?'She':'He').replace(/\{he\}/g,w?'she':'he').replace(/\{His\}/g,w?'Her':'His').replace(/\{his\}/g,w?'her':'his').replace(/\{him\}/g,w?'her':'him')};
+function save(){if(!S||S.dead)return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&s.v===1&&!s.dead?s:null}catch(e){return null}}
+function clearSave(){try{localStorage.removeItem(KEY)}catch(e){}}
+function log(t){S.log.unshift({d:S.day,t});if(S.log.length>60)S.log.length=60}
+function newState(name,bi,reflex){const b=BGS[bi];return{v:1,name,day:1,ken:b.ken,iai:b.iai,ins:b.ins,spi:b.spi,vb:b.vb,vitMax:b.vb+b.spi*4,vit:b.vb+b.spi*4,koku:b.koku,rations:b.rations,salve:1,honor:b.honor,fame:0,blade:b.blade,armor:b.armor,loc:'himeji',masters:{},mcool:{},tech:[],dojos:{},pray:{},job:null,board:null,rum:'',flags:{},log:[],wins:0,losses:0,kills:0,reflex,dead:false}}
+function fx(o){const out=[];for(const k in o){const v=o[k];if(!v)continue;
+ if(k==='day'){S.day+=v;out.push(`<span class="chip">${v} day${v>1?'s':''} pass</span>`);continue}
+ const b=S[k];let n=b+v;if(k==='vit')n=clamp(n,0,S.vitMax);else if(SN[k])n=clamp(n,1,10);else if(k==='honor')n=clamp(n,-100,100);else n=Math.max(0,n);
+ S[k]=n;if(k==='spi'){const ov=S.vitMax;S.vitMax=S.vb+S.spi*4;S.vit+=S.vitMax-ov}
+ const d=n-b;if(d)out.push(`<span class="chip ${d>0?'up':'dn'}">${d>0?'+':'−'}${Math.abs(d)} ${FXN[k]}</span>`)}
+ return out.join('')}
+function rank(){if(S.fame>=100&&mcount()===5)return 'Kensei, Sword Saint';let n='Nameless ronin';for(const x of [[10,'Wandering blade'],[25,'Known swordsman'],[45,'Feared duelist'],[70,'Master of the sword']])if(S.fame>=x[0])n=x[1];return n}
+const honorLabel=()=>S.honor>=40?'Paragon':S.honor>=15?'Honourable':S.honor>-15?'Unremarkable':S.honor>-40?'Dishonoured':'Outcast';
+function nbrs(id){const w=season()===3;return ROADS.filter(r=>r[0]===id||r[1]===id).map(r=>({to:r[0]===id?r[1]:r[0],d:r[2]+(w&&r[3]?1:0),m:!!r[3]}))}
+function dist(a){const d={[a]:0},q=[a];while(q.length){q.sort((x,y)=>d[x]-d[y]);const u=q.shift();for(const r of nbrs(u)){const nd=d[u]+r.d;if(d[r.to]===undefined||nd<d[r.to]){d[r.to]=nd;q.push(r.to)}}}return d}
+
+/* ---------- foes ---------- */
+function foe(o){const f={ken:3,iai:3,ins:3,dec:3,spi:3,vit:70,blade:1,armor:0,style:'balanced',ti:'',g:'m',tier:1,...o};f.vitMax=f.vit;f.ki=0;return f}
+function randFoe(kind,tier){tier=clamp(Math.round(tier),1,9);const b=1+tier*.9,s=()=>clamp(Math.round(b+R(-1,1)),1,10);
+ const g=kind!=='bandit'&&kind!=='samurai'&&Math.random()<.22?'f':'m';
+ const n=kind==='bandit'?pick(BANDITS):`${pick(SUR)} ${pick(g==='f'?GIVF:GIVM)}`;
+ const ti={ronin:'a masterless ronin',bandit:'bandit chief',samurai:`retainer of the ${pick(CLANS)} clan`,shinobi:'a shinobi of the night',student:'a young swordsman',hunter:'a bounty hunter',instructor:'dojo head'}[kind];
+ const style={bandit:pick(['aggressive','aggressive','balanced']),shinobi:'trickster',student:pick(['aggressive','balanced']),instructor:pick(['balanced','defensive'])}[kind]||pick(Object.keys(STYLES));
+ return foe({n,ti,g,tier,ken:s(),iai:s(),ins:s(),dec:s(),spi:s(),vit:55+tier*13+R(0,10),blade:clamp(Math.floor(tier/2)+R(-1,0),0,4),armor:kind==='samurai'?1:kind==='bandit'?R(0,1):0,style})}
+
+/* ---------- modal plumbing ---------- */
+const M=$('#modal'),MB=$('#mbox');
+function modal(html,cls='',keep){MB.className='mbox '+cls;MB.innerHTML=html;M.hidden=false;if(!keep)MB.scrollTop=0}
+function closeModal(){M.hidden=true;MB.innerHTML=''}
+function finish(){closeModal();const n=NEXT;NEXT=null;if(S.dead)return;if(n)n();else render()}
+function ev(title,text,choices,kanji=''){modal(`<div class="evk">${kanji}</div><h2>${title}</h2><p class="evt">${text}</p><div class="choices">${choices.filter(Boolean).map(c=>B(c[0],c[1],{sub:c[2],dis:c[3]})).join('')}</div>`)}
+function res(text,o={},l){const chips=fx(o);if(l)log(l);if(S.vit<=0)S.vit=1;render();modal(`<p class="evt">${text}</p>${chips?`<div class="chips">${chips}</div>`:''}<div class="choices">${B('Continue',finish,{cls:'primary'})}</div>`)}
+function fight(f,mode,onWin,onOther){duel(f,mode,r=>{if(r==='win')onWin();else if(onOther)onOther(r);else res(r==='fled'?'You escape with your life, if not your reputation.':'You walk away beaten, nursing your wounds and your pride.')})}
+
+/* ---------- duel ---------- */
+function dmg(a,d,m){return Math.max(3,Math.round((8+a.ken*1.6+a.blade*3+R(0,6))*m)-d.armor*3)}
+function tm(a){let m=1;if(has('shijo')&&(a==='strike'||a==='decisive'))m*=1.25;if(has('water')&&a==='parry')m*=1.4;if(has('shadow')&&a==='feint')m*=1.4;return m}
+const reli=()=>clamp(.5+(S.ins-D.f.dec)*.08+(has('tengu')?.12:0),.2,.95);
+function choose(){const f=D.f,fk=kiMax(f);
+ if(f.ki>=3&&Math.random()<(f.style==='aggressive'?.65:.45))return 'decisive';
+ const h=D.phist.slice(-4);if(h.length>=3&&Math.random()<f.ins*.05){const c={};h.forEach(a=>c[a]=(c[a]||0)+1);return COUNTER[Object.keys(c).sort((a,b)=>c[b]-c[a])[0]]}
+ const w={...STYLES[f.style]};if(f.vit<f.vitMax*.45)w.parry+=12;if(D.pki>=3)w.parry+=14;if(f.ki>=fk)w.focus=0;
+ let t=0;for(const k in w)t+=w[k];let r=Math.random()*t;for(const k in w){r-=w[k];if(r<=0)return k}return 'strike'}
+function tell(){const f=D.f;let a=D.intent;if(Math.random()>reli()){const o=['strike','parry','feint','focus'].filter(x=>x!==a);if(f.ki>=3&&a!=='decisive')o.push('decisive');a=pick(o)}return P(f,pick(TELLS[a]))}
+function fig(x,flip,you){return `<g class="fig" transform="translate(${x},0) scale(${flip?-1:1},1)"><path d="M-24,176 L-13,118 L13,118 L26,176 Z"/><path d="M-15,122 L-18,84 Q0,74 18,84 L15,122 Z"/><path d="M-27,88 Q0,70 27,88 L21,94 Q0,82 -21,94Z"/>${you?'<path class="sash" d="M-15,112 L15,112 L15,119 L-15,119Z"/>':''}<circle cx="0" cy="64" r="10"/><path d="M-3,55 q4,-10 10,-4 l-3,6z"/><path d="M8,96 L34,104 L36,97 L12,89Z"/><line class="blade" x1="30" y1="102" x2="88" y2="56"/></g>`}
+function scene(fl){return `<svg class="scene" viewBox="0 0 600 190" aria-hidden="true"><circle class="sun" cx="300" cy="86" r="62"/><path class="hills" d="M0,150 L90,112 L150,138 L230,96 L330,140 L420,104 L520,136 L600,118 L600,190 L0,190Z"/><rect class="ground" y="176" width="600" height="14"/>${fig(205,false,true)}${fig(395,true,false)}${fl==='f'||fl==='both'?'<path class="slash r" d="M365,58 L432,150"/>':''}${fl==='p'||fl==='both'?'<path class="slash r" d="M235,58 L168,150"/>':''}</svg>`}
+const bar=(v,m,line,cls)=>`<div class="hp ${cls||''}"><i style="width:${clamp(v/m*100,0,100)}%"></i>${line?`<b style="left:${line/m*100}%" title="Yields here"></b>`:''}</div>`;
+const pips=(n,m)=>`<span class="pips">${Array.from({length:m},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')}</span>`;
+function card(you){const f=D.f;const v=Math.max(0,you?S.vit:f.vit),m=you?S.vitMax:f.vitMax;return `<div class="fc"><div class="fn"><b>${you?esc(S.name):f.n}</b><span>${you?rank():f.ti}</span></div>${bar(v,m,you?D.pLine:D.fLine,you?'':'red')}<div class="fs"><span>${v} / ${m}</span><span>Ki ${pips(you?D.pki:f.ki,kiMax(you?PS():f))}</span></div></div>`}
+function assess(f){const pw=x=>x.ken*2+x.iai+x.spi+x.blade*2;const d=pw(f)-pw(PS());
+ const c=d<=-6?'You are clearly the stronger sword.':d<=-2?'You have the edge, if you are careful.':d<3?'An even match.':d<7?'This one is stronger than you.':'This one is far beyond you.';
+ const det=S.ins>=f.dec-1?`Kenjutsu ${f.ken} · Iai ${f.iai} · Insight ${f.ins} — ${P(f,'{he}')} ${STYLED[f.style]}.`:`${P(f,'{His}')} face gives nothing away; you cannot read ${P(f,'{his}')} style.`;
+ return `<p class="assess">${c}</p><p class="small">${det}</p>`}
+function duel(f,mode,cb){D={f,mode,cb,pki:0,phist:[],lines:[],over:false,phase:'intro',round:0};
+ D.pLine=mode==='yield'?Math.max(6,Math.round(S.vit*.35)):0;D.fLine=mode==='yield'?Math.round(f.vitMax*.35):0;
+ modal(`<div class="dtop"><span>${mode==='death'?'Duel to the death':'Duel to yield'}</span><span>${dateStr()}</span></div>${scene('')}<h2>${f.n}</h2><p class="small">${f.ti}</p>${assess(f)}<p>${mode==='death'?'To the death. If you fall, your road ends here.':'To yield: whoever is first driven past the blue mark on their bar concedes.'} Your wounds carry in with you: ${S.vit} of ${S.vitMax} vitality.</p><div class="choices">${B(S.reflex?'Hands to hilts — the quick-draw':'Draw',startIai,{cls:'primary',sub:S.reflex?'Click, tap or press Space the instant 斬 appears':'Your Iai decides who cuts first'})}</div>`,'wide duel')}
+function startIai(){if(!S.reflex){const p=PS();return iaiResolve(330-p.iai*15+R(0,90),false,true)}
+ D.phase='iai';D.iai={st:'wait',t0:0,tm:[]};
+ modal(`<div class="dtop"><span>The quick-draw</span><span>${D.f.n}</span></div><p class="evt">Hands rest on hilts. Neither of you breathes. Draw the instant <b>斬</b> appears — not before.</p><button id="iaiBtn" class="iaibtn" type="button"><span id="iaiSig">…</span><small>Tap, click or press Space</small></button>`,'wide duel');
+ const btn=$('#iaiBtn');btn.onpointerdown=e=>{e.preventDefault();iaiDraw()};btn.focus();
+ D.iai.tm.push(setTimeout(()=>{if(!D||!D.iai||D.iai.st!=='wait')return;D.iai.st='go';D.iai.t0=performance.now();$('#iaiSig').textContent='斬';btn.classList.add('go');D.iai.tm.push(setTimeout(()=>{if(D&&D.iai&&D.iai.st==='go')iaiDraw(true)},1200))},R(1400,3800)))}
+function iaiDraw(late){const I=D&&D.iai;if(!I||I.st==='done')return;const early=I.st==='wait';I.tm.forEach(clearTimeout);I.st='done';iaiResolve(early||late?9999:performance.now()-I.t0,early,false,late)}
+function iaiResolve(rt,early,auto,late){const p=PS(),f=D.f;let txt,fl='';const eff=auto?rt:Math.round(rt-(p.iai-5)*15),ft=Math.round(420-f.iai*18+R(0,60));
+ if(early){const d=dmg(f,p,.8);S.vit-=d;fl='p';txt=`You twitch before the signal — your draw is betrayed. ${f.n} cuts first. <em class="dmP">−${d} you</em>`}
+ else if(Math.abs(eff-ft)<12){txt='Two blades leave two scabbards as one. Steel rings; no blood.'}
+ else if(eff<ft){const d=dmg(p,f,.8*(has('lightning')?1.5:1));f.vit-=d;fl='f';txt=`Your blade is out first. <em class="dmF">−${d}</em>`}
+ else{const d=dmg(f,p,.8);S.vit-=d;fl='p';txt=`${late?'You hesitate. ':''}${f.n}’s blade is out first. <em class="dmP">−${d} you</em>`}
+ const tim=early?'Patience is part of the draw.':late?'Too slow.':auto?`Your draw ${eff} ms against ${ft} ms, decided by Iai.`:`Your reaction ${Math.round(rt)} ms${p.iai!==5?` (${eff} ms with your Iai)`:''} against ${ft} ms.`;
+ D.lines.push(`<b class="ac">Quick-draw</b> ${txt}`);if(checkEnd())return;
+ modal(`<div class="dtop"><span>The quick-draw</span><span>${f.n}</span></div>${scene(fl)}<div class="fighters">${card(true)}${card(false)}</div><p class="evt">${txt}</p><p class="small">${tim}</p><div class="choices">${B('Take your stance',()=>{D.phase='fight';D.intent=choose();D.tell=tell();renderDuel('',true)},{cls:'primary'})}</div>`,'wide duel')}
+function renderDuel(fl,top){const f=D.f,r=reli(),q=r>=.8?'Clear':r>=.62?'Fair':r>=.45?'Uncertain':'Clouded';
+ const A=[['strike','beats Feint, Focus'],['parry','beats Strike, counters'],['feint','beats Parry'],['focus','+2 ki, leaves you open'],['decisive','3 ki · overwhelms']];
+ modal(`<div class="dtop"><span>${D.mode==='death'?'Duel to the death':'Duel to yield'}</span><span>Exchange ${D.round+1}</span></div>${scene(fl)}<div class="fighters">${card(true)}${card(false)}</div>
+ <div class="read"><span class="q q${q}">Your reading: ${q} (${Math.round(r*100)}%)</span><p>“${D.tell}”</p></div>
+ <div class="acts">${A.map((a,i)=>B(`<kbd>${i+1}</kbd>${NAMES[a[0]]}`,()=>act(a[0]),{sub:a[1],dis:a[0]==='decisive'&&D.pki<3,cls:'act'})).join('')}</div>
+ <ol class="dlog">${D.lines.slice(-4).reverse().map(l=>`<li>${l}</li>`).join('')}</ol>
+ <div class="dfoot">${B(D.mode==='death'?'Attempt to flee':'Yield',quit,{cls:'ghost mini'})}<span class="hint">${f.ins>=7?`${f.n} is watching your habits closely.`:'Read the tell, then choose.'} Keys 1–5.</span></div>`,'wide duel',!top)}
+function act(pa){if(!D||D.over||D.phase!=='fight')return;if(pa==='decisive'&&D.pki<3)return;D.round++;D.phist.push(pa);
+ const fa=D.intent,f=D.f,p=PS();let toF=0,toP=0,txt='';
+ if(pa==='decisive')D.pki-=3;if(fa==='decisive')f.ki-=3;
+ const dP=m=>dmg(p,f,m*tm(pa)),dF=m=>dmg(f,p,m);
+ if(pa===fa&&(pa==='strike'||pa==='decisive')){const m=pa==='strike'?.7:1.2,pr=p.ken+R(0,6),fr=f.ken+R(0,6);
+  if(pr>fr){toF=dP(m);txt=`Steel rings on steel — you win the exchange and cut ${f.n}.`}else if(fr>pr){toP=dF(m);txt=`Steel rings on steel — ${f.n} wins the exchange and cuts you.`}else{toF=dP(.4);toP=dF(.4);txt='Both blades land at once.'}}
+ else if((pa==='decisive'&&fa==='parry')||(fa==='decisive'&&pa==='parry')){const mine=pa==='decisive',att=mine?p:f,def=mine?f:p;
+  if(def.ken+def.ins+R(0,8)>att.ken+att.spi+R(0,8)+2){if(mine){toP=dF(.8);txt=`${f.n} reads your decisive cut and answers it.`}else{toF=dP(.8);txt=`You read ${f.n}’s decisive cut and answer it.`}}
+  else{if(mine){toF=dP(1.5);txt=`Your decisive cut breaks through ${f.n}’s guard.`}else{toP=dF(1.5);txt=`${f.n}’s decisive cut breaks through your guard.`}}}
+ else{let r=RULES[pa+'|'+fa],pA=true;if(!r){r=RULES[fa+'|'+pa];pA=false}
+  if(pA){if(r.a)toF=dP(r.a);if(r.b)toP=dF(r.b);D.pki+=r.ak||0;f.ki+=r.bk||0}else{if(r.a)toP=dF(r.a);if(r.b)toF=dP(r.b);f.ki+=r.ak||0;D.pki+=r.bk||0}
+  txt=(pA?r.pA:(r.fA||r.pA)).replace(/\{F\}/g,f.n)}
+ D.pki=clamp(D.pki,0,kiMax(p));f.ki=clamp(f.ki,0,kiMax(f));f.vit-=toF;S.vit-=toP;
+ D.lines.push(`<b class="ac">${NAMES[pa]} vs ${NAMES[fa]}.</b> ${txt}${toF?` <em class="dmF">−${toF}</em>`:''}${toP?` <em class="dmP">−${toP} you</em>`:''}`);
+ if(checkEnd())return;D.intent=choose();D.tell=tell();renderDuel(toF&&toP?'both':toF?'f':toP?'p':'')}
+function checkEnd(){const f=D.f;
+ if(D.mode==='death'){if(f.vit<=0&&S.vit<=0){S.vit=1;endDuel('win');return true}if(S.vit<=0){endDuel('dead');return true}if(f.vit<=0){endDuel('win');return true}}
+ else{if(S.vit<=D.pLine){S.vit=Math.max(1,S.vit);endDuel('lose');return true}if(f.vit<=D.fLine){endDuel('win');return true}}return false}
+function quit(){if(!D||D.over)return;if(D.mode==='yield')return endDuel('yield');
+ if(R(1,100)<=30+S.spi*4+S.iai*2)return endDuel('fled');
+ const d=dmg(D.f,PS(),1);S.vit-=d;D.lines.push(`<b class="ac">Flight.</b> You turn to run — ${D.f.n} cuts you across the back. <em class="dmP">−${d} you</em>`);
+ if(checkEnd())return;D.intent=choose();D.tell=tell();renderDuel('p')}
+function endDuel(r){D.over=true;const f=D.f,t=f.tier||1,big=f.master||f.nemesis;let head,body,o={};
+ if(r==='win'){S.wins++;if(D.mode==='death'){S.kills++;o={fame:3+t*3};body=`${f.n} falls and does not rise.`}else{o={fame:2+t*2,honor:1};body=`${f.n} lowers ${P(f,'{his}')} blade and bows. “I yield.”`}head='Victory';if(big)o={}}
+ else if(r==='lose'){S.losses++;o={fame:-(1+t)};head='Defeat';body=`Your knees strike the earth. ${f.n} stands over you, blade at your neck — then steps back. You live, humbled.`}
+ else if(r==='yield'){S.losses++;o={fame:-(2+t),honor:-1};head='You yield';body='You lower your sword and bow. There is no shame in living. Mostly.'}
+ else if(r==='fled'){o={fame:-3,honor:-4};head='You flee';body=`You break away into the trees. ${f.n}’s laughter follows you.`}
+ else{head='The last cut';body=`${f.n}’s blade finds you. The sky is very wide.`}
+ const chips=r==='dead'?'':fx(o);if(r!=='dead'&&r!=='win')log(`${head==='Victory'?'Defeated':r==='fled'?'Fled from':'Lost to'} ${f.n} (${D.mode==='death'?'to the death':'to yield'}).`);
+ render();
+ modal(`<div class="dtop"><span>${D.mode==='death'?'Duel to the death':'Duel to yield'}</span><span>${D.round} exchanges</span></div>${scene(r==='win'?'f':r==='dead'||r==='lose'?'p':'')}<h2>${head}</h2><p class="evt">${body}</p>${chips?`<div class="chips">${chips}</div>`:''}<div class="choices">${B('Continue',()=>{const cb=D.cb;D=null;if(r==='dead')gameOver(`Slain by ${f.n}, ${f.ti}`);else cb(r)},{cls:'primary'})}</div>`,'wide duel')}
+
+/* ---------- road events ---------- */
+const EVENTS=[
+{w:3,f:T=>{const b=randFoe('bandit',T),toll=8+T*4,ip=clamp(20+S.fame-T*8,5,90);
+ ev('Bandits on the road',`Where the road narrows between cedars, ${R(3,6)} ragged men step out with spears and rusted blades. Their chief, <b>${b.n}</b>, grins: “The road has a toll, ronin. ${toll} koku — or your sword.”`,[
+ ['Draw on the chief',()=>fight(b,'death',()=>res('The chief falls. His men scatter into the trees, leaving a purse in the mud.',{koku:R(8,16)+T*5,honor:2},`Cut down the bandit ${b.n}.`)),'Duel to the death'],
+ ['Pay the toll',()=>res('You pay. Their laughter follows you down the road.',{koku:-toll,honor:-3,fame:-1},'Paid a bandit toll.'),`${toll} koku`,S.koku<toll],
+ ['Stare them down',()=>R(1,100)<=ip?res('You rest a hand on your hilt and say your name. Someone at the back has heard it. They melt into the trees.',{fame:1,honor:1},'Stared down a bandit gang.'):res('They have never heard of you. They rush you, and you fight your way clear — but not cleanly.',{vit:-R(10,18),koku:-Math.min(S.koku,5)}),`${ip}% — fame helps`],
+ ['Slip away into the forest',()=>res('You lose the road and a day, and spill rice in the thickets.',{day:1,rations:-2})]],'賊')}},
+{w:3,f:T=>{const r=randFoe('ronin',T);
+ ev('A ronin on the bridge',`On a narrow bridge, ${r.n} — ${r.ti} — blocks the way, hand resting on ${P(r,'{his}')} hilt. “Your walk is a swordsman’s walk. Show me.”`,[
+ ['Accept, to yield',()=>fight(r,'yield',()=>res(`${r.n} bows deeply and stands aside. Word of the bout will travel ahead of you.`,{},`Bested ${r.n} on a bridge.`)),'Fame if you win'],
+ ['Accept, to the death',()=>fight(r,'death',()=>res(`You clean your blade. Somewhere, someone will wait for ${r.n} and never see ${P(r,'{him}')} again.`,{koku:R(3,12)},`Killed ${r.n} on a bridge.`)),'More fame, real risk'],
+ ['Offer to share a meal',()=>roll('ins',4)?res(`You saw the hunger behind the challenge. Over shared rice, ${r.n} tells you of the road ahead and leaves a friend.`,{rations:-1,honor:3},'Shared rice with a hungry ronin.'):res(`${r.n} takes the offer as an insult and spits on the boards. You find another way across.`,{fame:-1,day:1}),`Insight ${pc('ins',4)}% · 1 ration`,S.rations<1],
+ ['Decline and turn back',()=>res('You find a crossing downstream. It costs a day and a little of your name.',{day:1,fame:-2,honor:-1})]],'橋')}},
+{w:1.2,f:T=>{const a=randFoe('bandit',Math.max(1,T-1)),b=randFoe('bandit',T+1);
+ const def=paid=>fight(a,'death',()=>ev('The chief rides in',`${a.n} lies dead in the paddy. From the treeline, ${b.n} rides out with the rest of the gang, roaring.`,[['Stand in the gate',()=>fight(b,'death',()=>res(`The bandits break. The villagers weep and press rice into your hands${paid?', and the promised coins':''}.`,paid?{koku:18,rations:3,honor:2,fame:4}:{rations:4,honor:9,fame:5},'Defended a village from bandits.')),'Duel to the death']],'村'));
+ ev('A village in fear','Farmers kneel in the road. Bandits come every harvest, the headman says, and tomorrow they come again. “We have nothing. Only rice, and a few coins.”',[
+ ['Defend them for nothing',()=>def(false),'Two fights to the death · great honour'],
+ ['Defend them for their coins',()=>def(true),'Two fights · 18 koku'],
+ ['Ride on',()=>res('You do not look back. The headman does not curse you. That is worse.',{honor:-4})]],'村')}},
+{w:1.5,f:()=>ev('A wounded traveller','A merchant lies against a milestone, bleeding from a bandit’s cut. Somehow his purse is still on his belt.',[
+ ['Bind his wound with your salve',()=>res('He presses coins into your hand with shaking fingers. “The gods saw this.”',{salve:-1,honor:5,koku:R(10,25)},'Saved a wounded merchant.'),'Uses 1 salve',S.salve<1],
+ ['Share your rice and stay the night',()=>res('By morning he can walk. He thanks you and limps on toward the next town.',{rations:-1,day:1,honor:4},'Tended a wounded merchant.'),'1 ration · 1 day',S.rations<1],
+ ['Take the purse',()=>res('He watches you with flat eyes as you go. The coins are heavy.',{koku:R(12,25),honor:-10},'Robbed a dying merchant.')],
+ ['Walk on',()=>res('Someone else will come along. Probably.',{honor:-1})]],'傷')},
+{w:.8,f:()=>ev('The woman at the crossroads','At dusk a beautiful woman waits where three roads meet. Her shadow, you notice, has a tail. “Answer me, swordsman: what cuts without a blade, and heals without a hand?”',[
+ ['Answer her',()=>roll('ins',5)?res('“Time,” you say. She laughs like temple bells and is gone. Your eyes feel sharper, as if a mist has lifted.',{ins:1},'Answered a kitsune’s riddle.'):res('She laughs at your answer and is gone. Later you find your purse full of oak leaves.',{koku:-Math.min(S.koku,12)},'Tricked by a kitsune.'),`Insight ${pc('ins',5)}%`],
+ ['Bow low and pass by',()=>res('She bows back. When you look again, a fox is trotting into the grass.',{honor:1})],
+ ['Draw on her',()=>res('Your blade cuts mist. Your rice bag is lighter in the morning.',{rations:-2})]],'狐')},
+{w:1.2,f:()=>ev('A mendicant monk','A monk in a basket hat sits beside a waterfall. “You carry two swords,” he says, “and one heavy heart. Sit.”',[
+ ['Sit with him for a day',()=>Math.random()<.55?res('Something in the water’s noise loosens. Your breath runs deeper.',{day:1,spi:1,vit:10},'Meditated with a monk.'):res('Your mind wanders to Kagemaru all day. Still, you are rested.',{day:1,vit:15}),'1 day · may raise Spirit'],
+ ['Give alms',()=>res('He bows. “May your blade stay in its scabbard.”',{koku:-5,honor:2}),'5 koku',S.koku<5],
+ ['Walk on',()=>res('The waterfall keeps talking after you leave.')]],'禅')},
+{w:1.3,f:T=>{const s=randFoe('samurai',T);
+ ev('An insult at the teahouse',`At a roadside teahouse, ${s.n}, ${s.ti}, is very drunk. “A ronin,” he announces to the room. “A dog without a master. Bark for us, dog.”`,[
+ ['Endure it',()=>roll('spi',4)?res('You finish your tea and bow on your way out. The room is quieter than it was.',{honor:3},'Endured a drunk samurai’s insult.'):res('You endure it, but your hands shake all the way to the next town.',{honor:1,fame:-1}),`Spirit ${pc('spi',4)}%`],
+ ['Demand an apology with steel',()=>fight(s,'yield',()=>res(`Sobered, ${s.n} kneels and apologises before everyone.`,{honor:2},`Humbled ${s.n}.`)),'Duel to yield'],
+ ['Cut him down',()=>fight(s,'death',()=>res('No one in the teahouse meets your eyes. Killing a drunk earns fear, not respect.',{honor:-5,koku:R(5,15)},`Killed ${s.n} in a teahouse.`)),'To the death']],'酒')}},
+{w:1,f:T=>{const clan=pick(CLANS),g=randFoe('samurai',T+1);
+ ev('A lord’s procession',`Banners of the ${clan} clan fill the road: spears, palanquins, a hundred retainers. Every traveller must kneel in the dust until it passes.`,[
+ ['Kneel',()=>res('You kneel. The palanquin passes. The world goes on.',{honor:1})],
+ ['Remain standing',()=>ev('You remain standing',`A captain, ${g.n}, breaks from the column with a hand on his hilt. “Kneel, or answer for it.”`,[
+  ['Answer for it',()=>fight(g,'yield',()=>res('A curtain twitches on the palanquin. A laugh — and a purse tossed into the dust. “A bold dog,” says a voice.',{koku:25,fame:4,honor:-2},`Defied the ${clan} procession.`)),'Duel to yield'],
+  ['Kneel after all',()=>res('You kneel, late. The captain spits beside you.',{honor:-2,fame:-1})]],'旗')],
+ ['Slip into the rice fields',()=>res('You lose an afternoon wading through paddies, but your pride stays dry.')]],'旗')}},
+{w:1,c:()=>S.blade<3,f:()=>{const fake=Math.random()<.45,price=Math.round(BCOST[S.blade+1]*.55);let seen=0;
+ const show=()=>ev('A blade merchant',`A peddler unwraps oiled cloth on his cart: a ${BLADES[S.blade+1].toLowerCase()}, he swears, for just ${price} koku.${seen===1?(fake?' <b>You see the truth: soft steel and a forged signature.</b>':' <b>The steel is true. It is a real bargain.</b>'):seen===2?' You study the steel but cannot tell.':''}`,[
+  !seen&&['Inspect the steel',()=>{seen=roll('ins',5)?1:2;show()},`Insight ${pc('ins',5)}%`],
+  ['Buy it',()=>{if(fake)return res('Three days later the edge folds on a branch. The signature was forged.',{koku:-price},'Bought a forged blade.');S.blade++;res(`A true blade. You now carry a ${BLADES[S.blade].toLowerCase()}.`,{koku:-price},'Bought a fine blade from a peddler.')},`${price} koku`,S.koku<price],
+  ['Decline',()=>res('He shrugs and wraps the blade again.')]],'刀');show()}},
+{w:1,f:()=>{const w=season()===3;ev(w?'Snowstorm':'Storm',w?'Snow comes sideways off the mountains. The road vanishes.':'Black clouds burst. The road becomes a river of mud.',[
+ ['Shelter in a roadside shrine',()=>res('You wait it out with the kami for company and wake rested.',{day:1,vit:15}),'1 day · rest'],
+ ['Press on',()=>res('You arrive soaked and shivering, but on time.',{vit:-R(8,w?20:14)})]],'嵐')}},
+{w:1,f:()=>ev('A lost child','A girl of six sits crying beneath a pine. She followed a butterfly too far from her village.',[
+ ['Carry her home',()=>res('Her mother falls at your feet. The village feeds you and fills your pack.',{day:1,honor:5,rations:3},'Carried a lost child home.'),'1 day'],
+ ['Point her toward the smoke',()=>res('She nods and runs. You hope she makes it.',{honor:1})],
+ ['Ignore her',()=>res('Her crying follows you a long way.',{honor:-3})]],'子')},
+{w:1,c:()=>S.koku>=10,f:()=>{let watched=0,caught=0;const g=()=>ev('Dice by the roadside',`A cheerful gambler rattles dice in a cup on an upturned crate. “Chō or han, friend? Even or odd — the gods decide.”${caught?' <b>You see it: a weighted die palmed in his sleeve.</b>':watched?' You watch his hands, and see nothing amiss.':''}`,[
+ !watched&&['Watch his hands first',()=>{watched=1;caught=roll('ins',6);g()},`Insight ${pc('ins',6)}%`],
+ caught&&['Expose him',()=>res('Caught, he pays you to keep quiet — and to keep your hand off your sword.',{koku:R(15,25),fame:1},'Exposed a cheating gambler.')],
+ !caught&&['Bet 10 koku',()=>Math.random()<.4?res('The dice fall your way. He pays with a wince.',{koku:10}):res('The dice fall his way. Of course they do.',{koku:-10}),'40% to double',S.koku<10],
+ ['Walk on',()=>res('His cheerful voice calls after you.')]],'賽');g()}},
+{w:1.6,c:()=>mcount()>=1&&!S.flags.avenged,f:T=>{const s=randFoe('shinobi',T+1),p=pc('ins',6);
+ const win=()=>res('On the body: a slip of paper sealed in crimson wax. Kagemaru knows your name — and fears it.',{fame:4},'Killed a shinobi sent by Kagemaru.');
+ ev('A shadow at night','You camp beneath a pine. Some time after the moon sets, the crickets fall silent all at once.',[
+ ['Wake and draw',()=>{if(R(1,100)<=p)return fight(s,'death',win);const d=Math.min(S.vit-1,R(10,20));S.vit-=d;render();ev('Too slow',`A blade opens your shoulder before your eyes are fully open (−${d} vitality). ${s.n} stands over you.`,[['Fight for your life',()=>fight(s,'death',win),'To the death']],'影')},`Insight ${p}% to wake in time`]],'影')}},
+{w:1,f:()=>ev('A wild boar','A boar the size of a calf bursts from the bamboo, tusks lowered.',[
+ ['Meet it with the sword',()=>roll('ken',4)?res('One cut, clean. You eat well for days.',{rations:4},'Killed a wild boar.'):res('You kill it — after it opens your thigh.',{rations:3,vit:-R(12,20)}),`Kenjutsu ${pc('ken',4)}%`],
+ ['Climb a tree',()=>res('You wait in the branches, feeling foolish, until it wanders off.')]],'猪')},
+{w:1,f:()=>ev('A flooded river','Rain upriver has swollen the ford chest-deep and fast.',[
+ ['Wait for the water to fall',()=>res('By morning the ford is passable.',{day:1}),'1 day'],
+ ['Wade across',()=>roll('spi',5)?res('Cold to the bone, you reach the far bank.',{vit:-4}):res('The current takes your feet. You crawl out downstream with half your rice gone.',{vit:-12,rations:-Math.ceil(S.rations/2)}),`Spirit ${pc('spi',5)}%`],
+ ['Pay a ferryman',()=>res('A ferryman with one tooth takes you across, singing.',{koku:-4}),'4 koku',S.koku<4]],'川')},
+{w:.7,c:()=>S.honor>=10&&S.ken<10,f:()=>ev('An old swordsman','Splitting firewood behind a hut, an old man moves with a stillness you have seen only once before — in Ittetsu. “Your stance is greedy,” he says without looking up.',[
+ ['Ask him to teach you',()=>res('Three days of chopping wood and being struck with a stick. On the fourth, you understand something.',{day:3,ken:1},'Trained under a hermit.'),'3 days · +1 Kenjutsu'],
+ ['Ask about Kagemaru',()=>res('“Akagi? He came here too. I refused him.” The old man rubs a scar. “He fights like a man in a hurry. Make him wait — guard, gather your ki — and he grows reckless.”')],
+ ['Bow and leave',()=>res('He keeps splitting wood.')]],'翁')},
+{w:.8,c:()=>S.blade<3,f:()=>ev('A body in the grass',`A samurai lies face down in the grass, crows already gathering. His sword, still sheathed, is a ${BLADES[S.blade+1].toLowerCase()}.`,[
+ ['Take the sword',()=>{S.blade++;res('You take it. The dead have no use for steel, you tell yourself.',{honor:-6},'Took a dead man’s sword.')}],
+ ['Bury him with his sword',()=>res('You dig with your hands and a broken spear. Some debts are owed to strangers.',{day:1,honor:5},'Buried a stranger with his sword.'),'1 day'],
+ ['Search his purse',()=>res('A few coins. The crows watch you.',{koku:R(5,15),honor:-3})]],'骸')},
+{w:1.2,c:()=>S.fame>=20,f:T=>{const s=randFoe('student',Math.max(1,T-2));
+ ev('An eager young sword',`${s.n} drops to both knees in the road. “You are ${esc(S.name)}! Please — fight me, or teach me!”`,[
+ ['Teach for a day',()=>res(`You correct ${P(s,'{his}')} grip and footwork until dusk. ${P(s,'{He}')} will tell everyone ${P(s,'{he}')} meets.`,{day:1,honor:3,fame:2},'Taught a young swordsman.'),'1 day'],
+ ['Give a lesson with steel',()=>fight(s,'yield',()=>res(`${s.n} lies in the dust, grinning through a split lip. “Thank you!”`,{},`Gave ${s.n} a lesson with steel.`)),'Duel to yield'],
+ ['Refuse',()=>res('You walk on. Disappointment follows you like a puppy.',{fame:-1})]],'弟')}},
+{w:1.6,c:()=>S.honor<=-15,f:T=>{const h=randFoe('hunter',T+1),fee=20+T*5;
+ ev('A wanted notice',`${h.n} steps from behind a stone lantern, holding a paper with your face inked on it. “Dead or alive, it says. Dead is lighter.”`,[
+ ['Fight',()=>fight(h,'death',()=>res('You burn the notice with the bounty hunter’s own flint.',{koku:R(10,20)},`Killed the bounty hunter ${h.n}.`)),'To the death'],
+ [`Pay ${P(h,'{him}')} off`,()=>res('Coins change hands. The notice goes into the fire.',{koku:-fee}),`${fee} koku`,S.koku<fee],
+ ['Run',()=>roll('iai',6)?res('You are gone before the paper hits the ground.',{fame:-1}):fight(h,'death',()=>res('Cornered, you fought — and won.',{koku:R(10,20)},`Killed the bounty hunter ${h.n}.`)),`Iai ${pc('iai',6)}%`]],'賞')}},
+{w:.8,f:()=>ev(['Cherry-blossom festival','Summer lantern festival','Moon-viewing night','New-year fires'][season()],'A village has strung lanterns between the pines. There is sake, music, and a puppet play about a ronin who saves a princess.',[
+ ['Join in',()=>res('For one night, you forget the road.',{koku:-5,vit:18,honor:1},'Celebrated at a village festival.'),'5 koku',S.koku<5],
+ ['Watch from the edge',()=>res('The puppet ronin wins. It is easier for puppets.',{vit:6})]],'祭')},
+{w:1.2,c:()=>!S.flags.comrade&&S.day>12,f:()=>{S.flags.comrade=1;ev('An old friend','“Is that you?” Hayashi Kenta, who trained beside you under Ittetsu, drops his pack and embraces you. He has been hunting Kagemaru too.',[
+ ['Spar like the old days',()=>res('He beats you twice; you beat him once. You both laugh until you cry. You see your own habits clearly now.',{ins:1,day:1},'Sparred with Kenta.'),'1 day · +1 Insight'],
+ ['Share what you know',()=>res('Kenta gives you two salves. “Kagemaru wants the greatest swords dead. Beat enough masters and he will send for you. Become loud.”',{salve:2},'Met Kenta on the road.')]],'友')}},
+{w:1,f:()=>ev('A mountain teahouse','Steam, the smell of roasted barley, and an old woman who has heard every story in the province.',[
+ ['Tea and gossip',()=>res(`“${rumour()}”`,{koku:-2,vit:8}),'2 koku',S.koku<2],
+ ['Rest your feet and move on',()=>res('You rest a moment on the bench.',{vit:4})]],'茶')}
+];
+function rumour(){const nx=Object.keys(MASTERS).filter(k=>!S.masters[k]).sort((a,b)=>MASTERS[a].fame-MASTERS[b].fame)[0];
+ if(S.flags.nemesis&&!S.flags.avenged&&Math.random()<.5)return 'A ronin in a crimson haori has been camping at Sekigahara. He talks to the crows. They say he is waiting for someone.';
+ if(nx&&Math.random()<.5){const m=MASTERS[nx];return `${m.n}, ${m.ti}, keeps to ${LOC[nx].n}. They say ${P(m,'{he}')} will not cross swords with anyone of less than ${m.fame} fame${m.honor?` or doubtful honour`:''}.`}
+ if(!S.flags.nemesis&&Math.random()<.35)return 'A man in a crimson haori has been asking about the great masters, one by one. Beat enough of them and he will come looking for you.';
+ return pick(RUMOURS)}
+
+/* ---------- travel and arrival ---------- */
+function travel(r){if(D||S.dead)return;let st=0;for(let i=0;i<r.d;i++){S.day++;if(S.rations>0){S.rations--;S.vit=Math.min(S.vitMax,S.vit+3)}else{S.vit-=8;st++}}
+ log(`Walked ${r.d} day${r.d>1?'s':''} toward ${LOC[r.to].n}${st?`, ${st} without food`:''}.`);
+ if(S.vit<=0){S.vit=0;return gameOver(`Starved on the road to ${LOC[r.to].n}`)}
+ NEXT=()=>arrive(r.to);
+ if(Math.random()<.58+(r.m?.08:0)){const T=clamp(Math.round((ftier()+LOC[r.to].tier)/2)+R(-1,0),1,9),pool=EVENTS.filter(e=>!e.c||e.c());let x=Math.random()*pool.reduce((a,e)=>a+e.w,0);for(const e of pool){x-=e.w;if(x<=0){render();return e.f(T)}}}
+ log(pick(QUIET[season()]));const n=NEXT;NEXT=null;n()}
+function arrive(to){S.loc=to;UI.view=null;UI.dice='';log(`Arrived at ${LOC[to].n}.`);render();const j=S.job;
+ if(j&&j.to===to){if(j.type==='courier'){S.job=null;const late=S.day>j.due;return res(late?'You deliver the letter, days late. The recipient pays half, coldly.':'You deliver the sealed letter. The recipient pays and asks no questions.',{koku:late?Math.round(j.pay/2):j.pay,honor:late?-1:1},`Delivered a letter to ${LOC[to].n}.`)}
+  const b=randFoe('bandit',j.tier);b.n=j.foe;
+  return ev('The bounty',`Locals point you up a side path. ${b.n} is waiting with ${R(3,7)} men and a stolen ox.`,[['Call him out',()=>fight(b,'death',()=>{S.job=null;res(`You bring back ${b.n}’s topknot as proof. The reward is paid.`,{koku:j.pay,fame:3,honor:2},`Collected the bounty on ${b.n}.`)},()=>res('The bandit escapes into the hills. The bounty still stands.')),'To the death'],['Come back later',finish]],'賞')}
+ if(LOC[to].sv.includes('inn')&&Math.random()<clamp(.1+S.fame*.004,.1,.4))challenger()}
+function challenger(){const L=LOC[S.loc],f=randFoe(pick(['ronin','ronin','samurai','student']),ftier()+R(0,1));
+ ev('A challenge at the gate',`At the edge of ${L.n}, ${f.n}, ${f.ti}, waits with arms folded. “${S.fame>=10?`I have heard the name ${esc(S.name)}. Let us see if it is earned.`:'You look like a swordsman. Prove it.'}”`,[
+ ['Accept, to yield',()=>fight(f,'yield',()=>res(`${f.n} bows and withdraws. A crowd has gathered; your name is on their lips.`,{},`Bested ${f.n} at ${L.n}.`)),'Fame if you win'],
+ ['Accept, to the death',()=>fight(f,'death',()=>res(`${f.n} lies still in the road. The crowd parts for you in silence.`,{koku:R(5,15)},`Killed ${f.n} at ${L.n}.`)),'More fame, real risk'],
+ ['Decline politely',()=>res('You bow and walk past. Someone in the crowd laughs.',{fame:-1})]],'挑')}
+
+/* ---------- places ---------- */
+function offers(){if(S.board&&S.board.loc===S.loc&&S.board.day===S.day)return S.board.o;const dm=dist(S.loc),oth=Object.keys(LOC).filter(k=>k!==S.loc&&dm[k]>=2),o=[];
+ const bt=pick(oth),tier=clamp(Math.max(LOC[bt].tier,ftier())+R(0,1),1,9),nm=pick(BANDITS);o.push({type:'bounty',to:bt,tier,foe:nm,pay:25+tier*14,txt:`Bounty: ${nm} preys on travellers near <b>${LOC[bt].n}</b>.`});
+ const ci=oth.filter(k=>LOC[k].sv.includes('inn')),ct=ci.length?pick(ci):bt,dd=dm[ct];o.push({type:'courier',to:ct,due:S.day+dd+2,pay:8+dd*5,txt:`Courier: a sealed letter for <b>${LOC[ct].n}</b>, due by day ${S.day+dd+2}.`});
+ S.board={loc:S.loc,day:S.day,o};return o}
+function holy(){const ise=S.loc==='ise',cd=(S.pray[S.loc]??-99)+(ise?30:10)>S.day,c=S.spi*6;
+ return `${B(ise?'Pray at the Grand Shrine':'Pray',()=>{S.pray[S.loc]=S.day;fx(ise?{day:1,vit:S.vitMax,honor:2}:{day:1,vit:12,honor:1});log(`Prayed at ${LOC[S.loc].n}.`);render()},{sub:cd?'The kami heard you recently':ise?'1 day · full healing · honour':'1 day · +12 vitality · honour',dis:cd})}
+ ${B('Meditate',()=>{fx({koku:-c,day:3,spi:1});log(`Meditated at ${LOC[S.loc].n}.`);render()},{sub:S.spi>=10?'Mastered':`3 days · ${c} koku offering · +1 Spirit`,dis:S.spi>=10||S.koku<c})}<p class="small">Spirit deepens your ki and your vitality.</p>`}
+const SVN={inn:'Inn',market:'Market',smith:'Smith',dojo:'Dojo',temple:'Temple',shrine:'Shrine',dice:'Dice den',onsen:'Hot spring',camp:'Camp'};
+const SV={
+inn(){const cost=3,heal=26+S.spi*2,n=Math.max(1,Math.ceil((S.vitMax-S.vit)/heal)),full=S.vit>=S.vitMax,heard=S.rum===S.loc+S.day;
+ return `${B('Rest a night',()=>{fx({koku:-cost,day:1,vit:heal});log(`Rested at the inn in ${LOC[S.loc].n}.`);render()},{sub:`${cost} koku · +${heal} vitality`,dis:full||S.koku<cost})}
+ ${B('Rest until healed',()=>{fx({koku:-cost*n,day:n,vit:S.vitMax});log(`Rested ${n} nights in ${LOC[S.loc].n}.`);render()},{sub:full?'You are whole':`${n} nights · ${n*cost} koku`,dis:full||S.koku<cost*n})}
+ ${B('Listen for rumours',()=>{S.rum=S.loc+S.day;ev('Talk in the common room',`“${rumour()}”`,[['Turn in for the night',finish]],'噂')},{sub:heard?'You heard today’s talk':'Free',dis:heard})}
+ <h4>Notice board</h4>${S.job?'<p class="small">You already carry a commission.</p>':offers().map(j=>`<div class="offer"><p>${j.txt}</p>${B('Accept',()=>{S.job=j;S.board=null;log(`Took a commission: ${j.txt.replace(/<[^>]+>/g,'')}`);render()},{cls:'mini',sub:`${j.pay} koku`})}</div>`).join('')}`},
+market(){return `${B('Buy a ration',()=>{fx({koku:-2,rations:1});render()},{sub:'2 koku',dis:S.koku<2})}${B('Buy five rations',()=>{fx({koku:-9,rations:5});render()},{sub:'9 koku',dis:S.koku<9})}${B('Buy a healing salve',()=>{fx({koku:-15,salve:1});render()},{sub:'15 koku · heals 45',dis:S.koku<15})}<p class="small">Every day on the road eats a ration. Without rice, the road eats you.</p>`},
+smith(){const disc=S.loc==='kanazawa'?.8:1,nb=S.blade+1,na=S.armor+1,cb=Math.round((BCOST[nb]||0)*disc),ca=Math.round((ACOST[na]||0)*disc);
+ return `${nb<BLADES.length?B(`Buy a ${BLADES[nb].toLowerCase()}`,()=>{fx({koku:-cb});S.blade=nb;log(`Bought a ${BLADES[nb].toLowerCase()}.`);render()},{sub:`${cb} koku · deeper cuts`,dis:S.koku<cb}):'<p>Your blade cannot be bettered.</p>'}
+ ${na<ARMORS.length?B(`Buy a ${ARMORS[na].toLowerCase()}`,()=>{fx({koku:-ca});S.armor=na;log(`Bought a ${ARMORS[na].toLowerCase()}.`);render()},{sub:`${ca} koku · −3 damage per blow${na===2?' · −1 Iai':''}`,dis:S.koku<ca}):''}
+ <p class="small">You carry a ${BLADES[S.blade].toLowerCase()} and wear a ${ARMORS[S.armor].toLowerCase()}.${disc<1?' Kanazawa smiths sell 20% cheaper.':''}</p>`},
+dojo(){const L=LOC[S.loc],tr=k=>{const c=S[k]*8;return B(`Train ${SN[k]}`,()=>{fx({koku:-c,day:3,[k]:1});log(`Trained ${SN[k]} at the ${L.n} dojo.`);render()},{sub:S[k]>=10?'Mastered':`3 days · ${c} koku`,dis:S[k]>=10||S.koku<c})},done=S.dojos[S.loc];
+ return `${tr('ken')}${tr('iai')}${tr('ins')}${B('Storm the dojo',stormDojo,{sub:done?'You have already tested this dojo':'Duel its head to yield · fame and koku',dis:done,cls:'warn'})}<p class="small">Kenjutsu sharpens every cut. Iai wins the quick-draw. Insight reads tells.</p>`},
+temple:holy,shrine:holy,
+dice(){const b=(amt,even)=>B(`${amt} on ${even?'chō':'han'}`,()=>{const a=R(1,6),c=R(1,6),win=((a+c)%2===0)===even;const chips=fx({koku:win?Math.round(amt*.9):-amt});UI.dice=`${a} and ${c} — ${(a+c)%2===0?'chō':'han'}. ${win?'You win.':'The house wins.'} ${chips}`;render()},{sub:even?'even':'odd',dis:S.koku<amt});
+ return `${b(10,true)}${b(10,false)}${b(30,true)}${b(30,false)}<p class="small">${UI.dice||'The house keeps a tenth of every win.'}</p>`},
+onsen(){const heal=55+S.spi*2;return `${B('Soak in the hot spring',()=>{fx({koku:-6,day:1,vit:heal});log('Soaked in the Hakone hot springs.');render()},{sub:`6 koku · 1 day · +${heal} vitality`,dis:S.koku<6||S.vit>=S.vitMax})}<p class="small">The barrier guards search every traveller. The springs make up for it.</p>`},
+camp(){return `${B('Make camp',()=>{fx({day:1,rations:-1,vit:14});log('Camped at Sekigahara.');render()},{sub:'1 day · 1 ration · +14 vitality',dis:S.rations<1})}${B('Walk the battlefield',walkField,{sub:'1 day · who knows'})}`}
+};
+function walkField(){fx({day:1});const r=Math.random();render();
+ if(r<.35)return ev('Among the grasses','You find a purse still on a skeleton’s belt, the coins green with age.',[['Take it',()=>res('Old coins still spend.',{koku:R(8,20),honor:-1})],['Leave it with its owner',()=>res('You leave it, and say a prayer.',{honor:2})]],'戦');
+ if(r<.6)return res('Broken spears, rusted helmets, a skull with a flower growing from its eye. You say a prayer for both armies.',{honor:1});
+ if(r<.82)return ev('A ghost in armour','At dusk a samurai in bloodied armour rises from the mist and points a broken sword at you, silently asking something.',[['Bow and offer a prayer',()=>roll('spi',5)?res('The ghost bows and fades. Something of his calm stays with you.',{spi:1},'Laid a ghost to rest at Sekigahara.'):res('The cold of the grave seeps into your bones before he fades.',{vit:-12}),`Spirit ${pc('spi',5)}%`],['Run',()=>res('You run, and do not stop until the moon is high.')]],'霊');
+ const b=randFoe('bandit',ftier());ev('Grave-robbers','Scavengers digging for armour decide you are easier pickings.',[['Fight',()=>fight(b,'death',()=>res('They will rob no more graves.',{koku:R(8,18)},'Cut down a grave-robber at Sekigahara.')),'To the death']],'賊')}
+function stormDojo(){const L=LOC[S.loc],t=L.tier+1,f=randFoe('instructor',t);f.ti=`head of the ${L.n} dojo`;
+ ev('Dōjō-yaburi',`You kneel at the dojo door and announce yourself as a challenger. Practice stops. ${f.n}, ${f.ti}, rises with a wooden sword — then, seeing your eyes, takes up a real one.`,[
+ ['Fight',()=>fight(f,'yield',()=>{S.dojos[S.loc]=1;res(`The students stare. ${f.n} quietly pays you to leave the dojo’s sign on its wall.`,{koku:15+t*10,fame:3},`Stormed the ${L.n} dojo.`)},()=>{S.dojos[S.loc]=1;res('You are thrown into the street. The students will tell this story for years.',{honor:-1},`Failed to storm the ${L.n} dojo.`)}),'Duel to yield'],
+ ['Withdraw',finish]],'道')}
+function masterDuel(id){const m=MASTERS[id],f=foe({...m,tier:6,master:true});
+ ev(m.n,m.intro,[['Bow, and draw',()=>fight(f,'yield',()=>{S.masters[id]=1;S.tech.push(m.key);const c=mcount();
+  let t=`${m.n} kneels and lays ${P(m,'{his}')} sword before you. “Take what I know.” You have learned the <b>${m.tech}</b>: ${m.td}.`;
+  if(c===3&&!S.flags.nemesis){S.flags.nemesis=1;t+='<br><br>That night a boy presses a folded note into your hand. Crimson ink, a single line: <b>“Sekigahara. I am waiting. — K.”</b>'}
+  if(c===5)t+='<br><br>All five masters have bowed to you. Only the title of Kensei remains — and fame enough to carry it.';
+  res(t,{...m.gift,fame:12,honor:2},`Defeated ${m.n} and learned the ${m.tech}.`)},()=>{S.mcool[id]=S.day+8;res(`${m.n} sheathes ${P(m,'{his}')} sword. “Not yet. Come back when you have walked further.”`,{},`Lost to ${m.n}.`)}),'Duel to yield'],['Not today',finish]],'師')}
+function nemesisDuel(){const k=foe({...NEMESIS});
+ ev('Sekigahara',`Mist lies on the old battlefield. A man in a crimson haori sits on a fallen banner pole, the scroll of Ittetsu’s school tucked into his sash. “${esc(S.name)}. You took your time. I killed our teacher because he had nothing left to teach me. Do you?”`,[['Draw',()=>fight(k,'death',victory),'To the death'],['Not yet',finish]],'仇')}
+function masterBlock(){const m=MASTERS[S.loc];if(!m)return '';
+ if(S.masters[S.loc])return `<div class="master done"><span class="mk1">勝</span><p>You have bested <b>${m.n}</b>, ${m.ti}, and carry the ${m.tech}.</p></div>`;
+ const need=[];if(S.fame<m.fame)need.push(`${m.fame} fame`);if(m.honor&&S.honor<m.honor)need.push(`${m.honor} honour`);const cd=(S.mcool[S.loc]||0)>S.day;
+ return `<div class="master"><span class="mk1">師</span><div><p><b>${m.n}</b>, ${m.ti}, lives here. Defeat ${P(m,'{him}')} to learn the <b>${m.tech}</b>: ${m.td}.</p>${B(`Challenge ${m.n}`,()=>masterDuel(S.loc),{cls:'primary',dis:need.length>0||cd,sub:need.length?`Requires ${need.join(' and ')}`:cd?`${P(m,'{He}')} will see you again in ${S.mcool[S.loc]-S.day} days`:'Duel to yield'})}</div></div>`}
+
+/* ---------- endings ---------- */
+const score=()=>S.fame+S.honor+mcount()*25+S.kills*2+(S.flags.avenged?150:0);
+const summary=()=>`<div class="res" style="margin-top:12px"><div><dt>Days</dt><dd>${S.day}</dd></div><div><dt>Duels won</dt><dd>${S.wins}</dd></div><div><dt>Masters</dt><dd>${mcount()}/5</dd></div><div><dt>Score</dt><dd>${score()}</dd></div></div><p class="small">${rank()} · ${honorLabel()} · ${S.kills} slain · ${S.fame} fame · honour ${S.honor}</p>`;
+function victory(){S.flags.avenged=1;fx({fame:25});log('Avenged Master Ittetsu. Akagi Kagemaru is dead.');render();
+ const ep=S.honor>=30?'You carry the scroll home to Harima and reopen Ittetsu’s dojo. Students come from three provinces. You teach them that the sword is the last answer, not the first.':S.honor>=0?'You burn incense at Ittetsu’s grave, lay the scroll on the stone, and keep walking. The road is the only home you have known.':'You take Kagemaru’s crimson haori and wear it yourself. In the villages they begin to whisper about a new Crimson Ronin.';
+ modal(`<div class="evk">討</div><h2>The debt is paid</h2><p class="evt">Kagemaru looks surprised, as men often do at the end. ${ep}</p>${summary()}<div class="choices">${B('Keep roaming',()=>{closeModal();render()},{cls:'primary',sub:'Seek the remaining masters, or the title of Kensei'})}${B('Begin a new life',newGame)}</div>`)}
+function gameOver(cause){S.dead=true;D=null;NEXT=null;clearSave();render();
+ modal(`<div class="evk">墓</div><h2>Here lies ${esc(S.name)}</h2><p class="evt">${cause}, on day ${S.day} of the road.${S.flags.avenged?' Master Ittetsu was avenged.':' Akagi Kagemaru still walks.'}</p>${summary()}<div class="choices">${B('Begin a new life',newGame,{cls:'primary'})}</div>`)}
+const NG={bg:0,name:'Hayato',reflex:true};
+function newGame(){D=null;NEXT=null;ngRender()}
+function ngRender(){modal(`<div class="evk">浪</div><h2>The Ronin’s Road</h2><p class="evt">Spring, 1603. Three years after Sekigahara the realm is at peace — and full of masterless swords. Your teacher, Ittetsu, was cut down in his own dojo by his former student <b>Akagi Kagemaru</b>, the Crimson Ronin, who carried off the school’s secret scroll. His trail is cold. Make a name loud enough that he cannot ignore it.</p>
+ <label class="fld"><span>Your name</span><input id="ngName" maxlength="20" value="${esc(NG.name)}" autocomplete="off"></label>
+ <div class="bgs">${BGS.map((b,i)=>B(b.n,()=>{NG.name=$('#ngName').value;NG.reflex=$('#ngRef').checked;NG.bg=i;ngRender()},{cls:i===NG.bg?'on':'',sub:`${b.d}<br><em>Kenjutsu ${b.ken} · Iai ${b.iai} · Insight ${b.ins} · Spirit ${b.spi} · ${b.koku} koku · honour ${b.honor>0?'+':''}${b.honor}</em>`})).join('')}</div>
+ <label class="chk"><input type="checkbox" id="ngRef" ${NG.reflex?'checked':''}><span>Quick-draw by reflex: every duel opens with a test of your real reaction time. Untick to let your Iai stat decide.</span></label>
+ <div class="choices">${B('Set out on the road',()=>{NG.name=($('#ngName').value||'').trim()||'Hayato';NG.reflex=$('#ngRef').checked;S=newState(NG.name,NG.bg,NG.reflex);log(`${NG.name} sets out from Himeji.`);render();
+  ev('Himeji, spring 1603','You buried Master Ittetsu in the hills above Himeji. Now there is only the road.<br><br>Click a pulsing town on the map to walk there; each day eats a ration. Things happen on the road — challengers, bandits, spirits, strangers. Rest at inns, train at dojos, take commissions from notice boards, and win duels to grow your fame.<br><br>When your name is loud enough, the five masters will face you. The nearest is the Hermit of Mount Kurama, beyond Kyōto, who wants 12 fame. Beat three masters and Kagemaru will come looking for you.',[['Take the first step',finish]],'始')},{cls:'primary'})}</div>`)}
+const HOW=`<div class="evk">剣</div><h2>How duels work</h2><p class="evt">Each exchange, you and your opponent choose at the same moment.</p>
+<p><b>Strike</b> beats Feint and Focus. <b>Parry</b> beats Strike and counter-cuts. <b>Feint</b> beats Parry. <b>Focus</b> gathers 2 ki but leaves you open. A <b>Decisive cut</b> spends 3 ki and overwhelms everything, unless a Parry reads it.</p>
+<p>Before each exchange you see your opponent’s <b>tell</b>. How far to trust it depends on your Insight against their guile: Clear, Fair, Uncertain or Clouded. Watch their ki too — three ki means a decisive cut may be coming.</p>
+<p>Skilled opponents learn your habits. Repeat the same move and they will counter it.</p>
+<p>Every duel opens with the <b>quick-draw</b>: wait for 斬, then click, tap or press Space. Move early and you are cut. A duel <b>to yield</b> ends when someone is driven past the blue mark on their bar; a duel <b>to the death</b> ends in death. Wounds carry between fights, so rest. Keys 1–5 choose actions.</p>`;
+
+/* ---------- render ---------- */
+function renderMap(){const nb={};nbrs(S.loc).forEach(r=>nb[r.to]=r);const w=season()===3;let roads='',dls='',nodes='';
+ for(const [a,b,d,m] of ROADS){const A=LOC[a],Z=LOC[b],act=a===S.loc||b===S.loc,mx=(A.x+Z.x)/2,my=(A.y+Z.y)/2;
+  roads+=`<line x1="${A.x}" y1="${A.y}" x2="${Z.x}" y2="${Z.y}" class="road${m?' mtn':''}${act?' act':''}"/>`;
+  dls+=`<g class="dl${act?' act':''}"><circle cx="${mx}" cy="${my}" r="9"/><text x="${mx}" y="${my+4}">${d+(w&&m?1:0)}</text></g>`}
+ for(const k in LOC){const L=LOC[k],here=k===S.loc,r=nb[k],big=L.tier>=4;
+  const [tx,ty,an]=L.a==='w'?[L.x-14,L.y+6,'end']:L.a==='n'?[L.x,L.y-16,'middle']:L.a==='s'?[L.x,L.y+26,'middle']:[L.x+14,L.y+6,'start'];
+  let mk='';if(MASTERS[k])mk+=`<text class="mk${S.masters[k]?' w':''}" x="${L.x}" y="${L.y-15}">${S.masters[k]?'勝':'師'}</text>`;
+  if(k==='seki'&&S.flags.nemesis&&!S.flags.avenged)mk+=`<text class="mk nem" x="${L.x}" y="${L.y-16}">仇</text>`;
+  if(S.job&&S.job.to===k)mk+=`<text class="mk job" x="${L.x+13}" y="${L.y-12}">依</text>`;
+  const inner=`${r?`<circle class="ring" cx="${L.x}" cy="${L.y}" r="14"/>`:''}<circle class="nd${big?' big':''}" cx="${L.x}" cy="${L.y}" r="${big?8:6}"/>${here?`<circle class="here" cx="${L.x}" cy="${L.y}" r="13"/><text class="hk" x="${L.x}" y="${L.y+5}">侍</text>`:''}<text class="nl${here?' cur':''}" x="${tx}" y="${ty}" text-anchor="${an}">${L.n}</text>${mk}`;
+  if(r){const id='c'+(++cbn);CB[id]=()=>travel(r);nodes+=`<g class="node go" data-cb="${id}" tabindex="0" role="button" aria-label="Walk to ${L.n}, ${r.d} day${r.d>1?'s':''}"><title>Walk to ${L.n} — ${r.d} day${r.d>1?'s':''}</title><circle class="hit" cx="${L.x}" cy="${L.y}" r="26"/>${inner}</g>`}
+  else nodes+=`<g class="node"><title>${L.n} — ${L.t}</title>${inner}</g>`}
+ const mt=[[470,170],[500,130],[540,200],[600,210],[480,280],[560,300],[620,170],[440,230],[300,250]].map(([x,y])=>`<path d="M${x-14},${y+8} L${x},${y-8} L${x+14},${y+8}"/>`).join('');
+ $('#map').innerHTML=`<svg viewBox="0 0 1000 620" role="img" aria-label="Map of the roads of central Japan, ${LOC[S.loc].n} marked as your location"><defs><pattern id="wv" width="48" height="22" patternUnits="userSpaceOnUse"><path class="wv" d="M0,16 q12,-12 24,0 t24,0"/></pattern></defs>
+ <rect class="sea" width="1000" height="620"/><rect fill="url(#wv)" width="1000" height="620"/><path class="land" d="${LAND}"/><g class="mtns">${mt}</g>
+ <ellipse class="lake" cx="292" cy="318" rx="13" ry="30" transform="rotate(18 292 318)"/><g transform="translate(702,314)"><path class="fuji" d="M-34,20 L-9,-16 L9,-16 L34,20Z"/><path class="snow" d="M-9,-16 L-4,-7 L2,-10 L9,-16Z"/></g>
+ ${roads}${dls}${nodes}<text class="cart" x="28" y="56">諸国道中図</text><text class="cart2" x="30" y="80">Roads of the realm · ${SEASONS[season()].toLowerCase()} ${1603+Math.floor((S.day-1)/360)}</text></svg>`}
+function statusHTML(){return `<div class="who"><span class="seal" aria-hidden="true">侍</span><div><h2>${esc(S.name)}</h2><p>${rank()} · ${honorLabel()}</p></div></div>
+ <div class="vit"><div class="vrow"><span>Vitality</span><b>${S.vit} / ${S.vitMax}</b></div>${bar(S.vit,S.vitMax,0,S.vit<S.vitMax*.3?'low':'')}</div>
+ <dl class="res"><div><dt>Koku</dt><dd>${S.koku}</dd></div><div><dt>Rations</dt><dd>${S.rations}</dd></div><div><dt>Fame</dt><dd>${S.fame}</dd></div><div><dt>Honour</dt><dd>${S.honor>0?'+':''}${S.honor}</dd></div></dl>
+ <div class="stats">${Object.keys(SN).map(k=>`<div class="st"><span>${SN[k]}</span><span class="pp">${Array.from({length:10},(_,i)=>`<i class="${i<S[k]?'on':''}"></i>`).join('')}</span><b>${S[k]}</b></div>`).join('')}</div>
+ <p class="gear"><span>${BLADES[S.blade]}</span><span>${ARMORS[S.armor]}</span>${S.salve?`<span>${S.salve} salve${S.salve>1?'s':''} ${B('Use',()=>{fx({salve:-1,vit:45});log('Used a healing salve.');render()},{cls:'mini',dis:S.vit>=S.vitMax})}</span>`:''}</p>
+ <div class="mrow">${Object.keys(MASTERS).map(k=>`<span class="ms${S.masters[k]?' won':''}" title="${MASTERS[k].n}, ${MASTERS[k].ti}">${S.masters[k]?'勝':'師'}<small>${LOC[k].n.replace('Mount ','')}</small></span>`).join('')}<span class="ms nem${S.flags.avenged?' won':''}" title="Akagi Kagemaru, the Crimson Ronin">${S.flags.avenged?'討':'仇'}<small>Kagemaru</small></span></div>
+ <p class="date"><span>${dateStr()}</span>${B(S.reflex?'Quick-draw: reflex':'Quick-draw: by Iai',()=>{S.reflex=!S.reflex;render()},{cls:'mini'})}</p>`}
+function placeHTML(){const L=LOC[S.loc],v=UI.view&&L.sv.includes(UI.view)?UI.view:L.sv[0];
+ let h=`<div class="ph"><span class="pk">${L.k}</span><div><h2>${L.n}</h2><p class="pt">${L.t}</p></div></div><p class="pd">${L.d}</p>`;
+ if(S.job){const j=S.job;h+=`<div class="job"><span>${j.type==='courier'?`Commission: deliver a letter to <b>${LOC[j.to].n}</b> by day ${j.due} (${j.pay} koku).${S.day>j.due?' Late.':''}`:`Commission: kill <b>${j.foe}</b> near <b>${LOC[j.to].n}</b> (${j.pay} koku).`}</span>${B('Abandon',()=>{S.job=null;fx({honor:-2});log('Abandoned a commission.');render()},{cls:'mini'})}</div>`}
+ h+=masterBlock();
+ if(S.loc==='seki'&&S.flags.nemesis&&!S.flags.avenged)h+=`<div class="boss"><span class="mk1">仇</span><div><p>Crows circle a single figure in a crimson haori at the centre of the field.</p>${B('Face Akagi Kagemaru',nemesisDuel,{cls:'primary',sub:'Duel to the death'})}</div></div>`;
+ h+=`<div class="tabs">${L.sv.map(s=>B(SVN[s],()=>{UI.view=s;render()},{cls:'tab'+(s===v?' on':'')})).join('')}</div><div class="svc">${SV[v]()}</div>`;
+ h+=`<h3 class="roads-h">Roads from here</h3><div class="roads">${nbrs(S.loc).map(r=>B(LOC[r.to].n,()=>travel(r),{sub:`${r.d} day${r.d>1?'s':''}${r.m?' · mountain':''}`})).join('')}</div>`;
+ return h}
+function render(){if(!S)return;if(!S.flags.kensei&&S.fame>=100&&mcount()===5){S.flags.kensei=1;log('The land now calls you Kensei — Sword Saint.')}
+ renderMap();$('#status').innerHTML=statusHTML();$('#place').innerHTML=placeHTML();
+ $('#journal').innerHTML=S.log.slice(0,18).map(l=>`<li><span>Day ${l.d}</span>${l.t}</li>`).join('');save()}
+
+/* ---------- input ---------- */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cb]');if(b&&!b.disabled){const f=CB[b.dataset.cb];if(f)f()}});
+document.addEventListener('keydown',e=>{
+ if(D&&D.phase==='iai'&&D.iai&&D.iai.st!=='done'&&(e.code==='Space'||e.key==='Enter')){e.preventDefault();iaiDraw();return}
+ if(D&&D.phase==='fight'&&!D.over&&/^[1-5]$/.test(e.key)&&e.target.tagName!=='INPUT'){e.preventDefault();act(['strike','parry','feint','focus','decisive'][+e.key-1]);return}
+ if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('g[data-cb]')){e.preventDefault();const f=CB[e.target.dataset.cb];if(f)f()}});
+$('#howBtn').addEventListener('click',()=>{if(D||!M.hidden)return;modal(`${HOW}<div class="choices">${B('Back to the road',()=>{closeModal()},{cls:'primary'})}</div>`)});
+$('#newBtn').addEventListener('click',()=>{if(D)return;modal(`<div class="evk">新</div><h2>Begin a new life?</h2><p class="evt">${esc(S.name)}’s journey will end here and cannot be recovered.</p><div class="choices">${B('Begin anew',()=>{clearSave();newGame()},{cls:'primary'})}${B('Keep walking',()=>{closeModal()})}</div>`)});
+
+S=load();if(S)render();else{S=newState('Hayato',0,true);S.dead=true;render();newGame()}
+})();
+</script>
+</body>
+</html>
